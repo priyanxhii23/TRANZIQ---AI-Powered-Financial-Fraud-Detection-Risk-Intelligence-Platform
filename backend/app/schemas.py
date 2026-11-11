@@ -85,6 +85,24 @@ class SettingsUpdate(BaseModel):
     threshold_overrides: dict[str, float | None] | None = None
 
 
+class RiskReapplyRequest(BaseModel):
+    bands: RiskBands | None = Field(None, description="New bands to save first; omit to re-apply the saved bands")
+
+
+class ScenarioRequest(BaseModel):
+    scenario: Literal["unusual_spending", "rapid_activity", "fraud_patterns", "legit_patterns", "custom"]
+    count: int = Field(40, ge=1, le=500)
+    intensity: float = Field(0.5, ge=0, le=1, description="Perturbation strength 0-1")
+    amount: float | None = Field(None, ge=0, le=100000, description="Fixed amount (custom / unusual spending)")
+    interval_seconds: float = Field(30, ge=1, le=86400, description="Gap between transactions (rapid activity / custom)")
+    base_profile: Literal["legit", "fraud"] = "legit"
+    base_transaction_id: int | None = Field(None, description="Stored Kaggle record to start from")
+    model: ModelName | None = None
+    threshold: float | None = Field(None, ge=0.01, le=0.99)
+    seed: int | None = None
+    persist: bool = False
+
+
 class RiskAssessRequest(BaseModel):
     probability: float = Field(..., ge=0, le=1)
     threshold: float | None = Field(None, ge=0.01, le=0.99)

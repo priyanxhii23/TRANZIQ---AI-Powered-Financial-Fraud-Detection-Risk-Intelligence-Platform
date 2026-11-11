@@ -56,3 +56,34 @@ async def predict_upload(
     out = predict_batch(db, rows, model or None, threshold, persist)
     out["validation"] = {**info, "errors": errors[:100]}
     return out
+
+
+@router.get("/template.csv")
+def csv_template(samples: int = 0, db: Session = Depends(get_db)):
+    """CSV template for batch scans. samples>0 adds that many REAL held-out Kaggle records
+    (half fraud-labelled, half legitimate) including their known `Class` label, which
+    the scanner ignores for prediction."""
+    import csv
+    import io
+
+    from fastapi import Query  # noqa: F401
+    from fastapi.responses import Response
+    from sqlalchemy import func, select
+
+    from ml.config import FEATURE_COLUMNS
+
+    from ..models import Transaction
+
+    samples = max(0, min(int(samples), 50))
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(FEATURE_COLUMNS + (["Class"] if samples else []))
+    if samples:
+        rows = []
+        for label, n in ((1, samples // 2), (0, samples - samples // 2)):
+            rows += db.scalars(select(Transaction).where(Transaction.source == "kaggle", Transaction.ground_truth == label)
+                               .order_by(func.random()).limit(n)).all()
+        for tx in rows:
+            w.writerow([tx.features[c] for c in FEATURE_COLUMNS] + [tx.ground_truth])
+    name = "tranziq_sample_transactions.csv" if samples else "tranziq_batch_template.csv"
+    return Response(buf.getvalue(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{name}"'})

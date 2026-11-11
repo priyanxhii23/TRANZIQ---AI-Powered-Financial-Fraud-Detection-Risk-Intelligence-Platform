@@ -147,3 +147,35 @@ def markdown_report(exp: dict) -> str:
     lines += ["---", "Accuracy is reported but NOT used for selection: with ~0.17% fraud, predicting "
               "'legitimate' for everything is already ~99.8% accurate."]
     return "\n".join(lines)
+
+
+@router.get("/pdf")
+def pdf_report(db: Session = Depends(get_db)):
+    """Professional branded PDF report built from stored results + live database."""
+    from sqlalchemy import func, select
+
+    from ..models import Alert, Prediction, Transaction
+    from ..services.pdf_report import build_pdf
+    from ..services.settings_service import risk_bands
+    from ..services.transaction_service import latest_prediction_subquery
+
+    exp = registry.experiments() if registry.artifacts_present() else None
+    eda = registry.eda()
+    model = active_model(db)
+    latest = latest_prediction_subquery(model)
+    dist_rows = dict(db.execute(select(Prediction.risk_level, func.count()).join(latest, latest.c.pid == Prediction.id)
+                                .group_by(Prediction.risk_level)).all())
+    flagged = db.scalar(select(func.count()).select_from(Prediction).join(latest, latest.c.pid == Prediction.id)
+                        .where(Prediction.predicted_label == 1)) or 0
+    n_tx = db.scalar(select(func.count(Transaction.id))) or 0
+    live = {
+        "active_model": model, "model_label": config.MODEL_LABELS[model],
+        "transactions": n_tx, "predictions": db.scalar(select(func.count(Prediction.id))) or 0,
+        "alerts": db.scalar(select(func.count(Alert.id))) or 0,
+        "risk_distribution": {k: int(dist_rows.get(k, 0)) for k in ("low", "medium", "high", "critical")},
+        "alert_status": dict(db.execute(select(Alert.status, func.count()).group_by(Alert.status)).all()),
+        "bands": risk_bands(db), "flag_rate": flagged / n_tx if n_tx else 0.0,
+    }
+    pdf = build_pdf(exp, eda, live)
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="tranziq_report_{_stamp()}.pdf"'})

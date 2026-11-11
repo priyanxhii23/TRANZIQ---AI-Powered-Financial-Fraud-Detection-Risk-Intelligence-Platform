@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select, text
+from sqlalchemy import case, func, select, text, update
 from sqlalchemy.orm import Session
 
 from ml import config
@@ -15,7 +15,7 @@ from .. import __version__
 from ..config import settings
 from ..database import get_db
 from ..models import Alert, Prediction, Transaction
-from ..schemas import RiskAssessRequest, SettingsUpdate
+from ..schemas import RiskAssessRequest, RiskReapplyRequest, SettingsUpdate
 from ..services import risk
 from ..services.model_registry import registry
 from ..services.settings_service import (
@@ -133,17 +133,47 @@ def risk_assess(body: RiskAssessRequest, db: Session = Depends(get_db)):
     return risk.explain_level(body.probability, risk_bands(db), thr)
 
 
-@router.post("/risk/reclassify")
-def risk_reclassify(db: Session = Depends(get_db)):
-    """Re-apply the current risk bands to every stored prediction (after changing bands)."""
-    bands = risk_bands(db)
-    n = 0
-    for p in db.scalars(select(Prediction)).yield_per(2000):
-        lvl = risk.classify(p.probability, bands)
-        if lvl != p.risk_level:
-            p.risk_level = lvl; n += 1
+@router.post("/risk/reapply")
+def risk_reapply(body: RiskReapplyRequest | None = None, db: Session = Depends(get_db)):
+    """Validate + save risk bands, then re-classify EVERY stored prediction in the database.
+
+    Implemented as two set-based SQL UPDATEs (one CASE expression), so it stays fast
+    for hundreds of thousands of rows. Alert severities are synced to the
+    re-classified level of the prediction that raised them. Alert *statuses*
+    (analyst decisions) are never changed.
+    """
+    bands = body.bands.model_dump() if body and body.bands else risk_bands(db)
+    try:
+        risk.validate_bands(bands)
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    set_setting(db, "risk_bands", bands)
+
+    level = case(
+        (Prediction.probability >= bands["critical"], "critical"),
+        (Prediction.probability >= bands["high"], "high"),
+        (Prediction.probability >= bands["medium"], "medium"),
+        else_="low",
+    )
+    before = dict(db.execute(select(Prediction.risk_level, func.count()).group_by(Prediction.risk_level)).all())
+    changed = db.execute(update(Prediction).where(Prediction.risk_level != level).values(risk_level=level)).rowcount
+    pred_level = select(Prediction.risk_level).where(Prediction.id == Alert.prediction_id).scalar_subquery()
+    alerts_changed = db.execute(update(Alert).where(Alert.severity != pred_level).values(severity=pred_level)).rowcount
     db.commit()
-    return {"updated_predictions": n, "bands": bands}
+    after = dict(db.execute(select(Prediction.risk_level, func.count()).group_by(Prediction.risk_level)).all())
+    total = sum(after.values())
+    return {
+        "bands": bands, "updated_predictions": int(changed or 0), "updated_alert_severities": int(alerts_changed or 0),
+        "total_predictions": int(total),
+        "distribution_before": {lvl: int(before.get(lvl, 0)) for lvl in risk.LEVELS},
+        "distribution_after": {lvl: int(after.get(lvl, 0)) for lvl in risk.LEVELS},
+    }
+
+
+@router.post("/risk/reclassify", include_in_schema=False)
+def risk_reclassify(db: Session = Depends(get_db)):
+    """Backwards-compatible alias: re-apply the currently saved bands."""
+    return risk_reapply(None, db)
 
 
 @router.get("/monitoring")

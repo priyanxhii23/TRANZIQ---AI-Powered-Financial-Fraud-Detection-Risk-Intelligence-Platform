@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from ml import config as ml_config
 
 from . import __version__
-from .api import alerts, dashboard, explain_api, models_api, predict, reports, synthetic_api, system, transactions
+from .api import alerts, dashboard, explain_api, models_api, predict, reports, scenarios_api, synthetic_api, system, transactions
 from .config import settings
 from .database import SessionLocal, init_db
 from .services.model_registry import ModelsNotTrainedError, registry
@@ -67,7 +67,7 @@ async def _not_trained(_: Request, exc: ModelsNotTrainedError):
 
 
 for r in (system.router, dashboard.router, transactions.router, predict.router, models_api.router,
-          synthetic_api.router, alerts.router, explain_api.router, reports.router):
+          synthetic_api.router, scenarios_api.router, alerts.router, explain_api.router, reports.router):
     app.include_router(r, prefix="/api")
 
 ml_config.PLOTS_DIR.mkdir(parents=True, exist_ok=True)
