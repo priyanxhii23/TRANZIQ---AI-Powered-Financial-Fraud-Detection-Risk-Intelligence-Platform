@@ -1,0 +1,2 @@
+# TRANZIQ---AI-Powered-Financial-Fraud-Detection-Risk-Intelligence-Platform
+TRANZIQ is an AI-powered financial fraud detection platform that uses Logistic Regression, Random Forest, and XGBoost to identify suspicious transactions. It combines imbalanced learning, synthetic data generation, explainable AI (SHAP), real-time risk scoring, and interactive analytics to deliver intelligent transaction monitoring.
