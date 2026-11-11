@@ -58,6 +58,8 @@ def _downsample(xs, ys, thr, n: int = 120) -> list[dict]:
     out = []
     for i in idx:
         t = float(thr[min(i, len(thr) - 1)]) if len(thr) else None
+        if t is not None and not np.isfinite(t):  # roc_curve's first threshold is +inf
+            t = None
         out.append({"x": round(float(xs[i]), 5), "y": round(float(ys[i]), 5), "threshold": None if t is None else round(t, 5)})
     return out
 

@@ -50,6 +50,14 @@ def log(msg: str) -> None:
     print(f"[TRANZIQ {datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+def _display_path(path) -> str:
+    """Repository-relative path when possible (portable), absolute otherwise."""
+    try:
+        return path.relative_to(config.ROOT_DIR).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def _subsample(df: pd.DataFrame, frac: float, seed: int) -> pd.DataFrame:
     """Keep all fraud rows and `frac` of legitimate rows (for quick test runs)."""
     fraud = df[df[config.TARGET_COLUMN] == 1]
@@ -137,7 +145,7 @@ def train(dataset_path=None, sample_frac: float | None = None, make_plots: bool 
             "validation": {**ranking_metrics(splits.y_val, val_proba),
                            "at_recommended": metrics_at_threshold(splits.y_val, val_proba, threshold)},
             "test": full_evaluation(splits.y_test.values, test_proba, threshold),
-            "artifact": str(path.relative_to(config.ROOT_DIR)).replace("\\", "/"),
+            "artifact": _display_path(path),
         }
         t = results[name]["test"]
         log(f"FINAL {name}: strategy={strategy} thr={threshold:.2f} TEST PR-AUC={t['pr_auc']:.4f} "
@@ -169,7 +177,7 @@ def train(dataset_path=None, sample_frac: float | None = None, make_plots: bool 
         shap_global["models"][name] = {k: v for k, v in gi.items() if k not in ("values", "X_t")}
         shap_global["models"][name]["plot"] = f"shap_summary_{name}.png" if make_plots else None
         log(f"SHAP global for {name} ({time.time() - t0:.1f}s)")
-    config.SHAP_GLOBAL_PATH.write_text(json.dumps(shap_global))
+    config.SHAP_GLOBAL_PATH.write_text(json.dumps(shap_global, allow_nan=False))
 
     # Splits needed later: TEST rows for seeding the demo DB, TRAIN pool for the generator.
     joblib.dump({
@@ -195,6 +203,6 @@ def train(dataset_path=None, sample_frac: float | None = None, make_plots: bool 
         "selection_criterion": SELECTION_CRITERION,
         "versions": {"scikit-learn": sklearn.__version__},
     }
-    config.EXPERIMENTS_PATH.write_text(json.dumps(report, indent=2))
+    config.EXPERIMENTS_PATH.write_text(json.dumps(report, indent=2, allow_nan=False))
     log(f"Done in {report['total_training_seconds']}s. Reports in {config.REPORTS_DIR}")
     return report

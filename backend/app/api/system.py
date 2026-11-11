@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from ml import config
 
 from .. import __version__
+from ..config import settings
 from ..database import get_db
 from ..models import Alert, Prediction, Transaction
 from ..schemas import RiskAssessRequest, SettingsUpdate
@@ -152,8 +154,9 @@ def monitoring(db: Session = Depends(get_db)):
                            .group_by(Prediction.model_name)).all()
     exp = registry.experiments() if registry.artifacts_present() else None
     db_size = None
-    if config.ROOT_DIR and (config.ROOT_DIR / "data" / "tranziq.db").exists():
-        db_size = (config.ROOT_DIR / "data" / "tranziq.db").stat().st_size
+    if settings.database_url.startswith("sqlite:///"):
+        db_file = Path(settings.database_url.replace("sqlite:///", ""))
+        db_size = db_file.stat().st_size if db_file.exists() else None
     return {
         "active_model": active_model(db),
         "training": None if not exp else {
