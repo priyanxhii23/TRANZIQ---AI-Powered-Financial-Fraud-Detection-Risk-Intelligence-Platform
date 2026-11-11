@@ -45,7 +45,6 @@ Everything runs on your laptop: no cloud services, no paid APIs, no API keys.
 - **Two art-directed themes**: *Flashlight / Aubergine / Sandy Brown / Space Cadet* (dark) and
   *Italian Roast / Dried Plum / Parchment* (light), plus an ambient animated background and a circular-reveal theme switch.
 
-> This is an educational portfolio project. Predictions are model outputs, not financial decisions.
 
 ## 2. Problem statement
 
