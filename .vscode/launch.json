@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TRANZIQ API (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "jinja": false
+    },
+    {
+      "name": "TRANZIQ train models (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/scripts/train_models.py",
+      "args": ["--quick"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
