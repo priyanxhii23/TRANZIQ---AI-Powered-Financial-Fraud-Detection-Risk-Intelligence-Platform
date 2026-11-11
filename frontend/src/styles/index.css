@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   TRANZIQ colour system. Values are "R G B" triplets so Tailwind can
+   apply opacity (e.g. bg-violet/20). Dark = midnight navy + graphite,
+   Light = warm off-white paper.
+   ------------------------------------------------------------------ */
+:root,
+.dark {
+  --bg: 7 10 20;          /* deep midnight navy */
+  --bg-2: 12 16 32;
+  --panel: 16 21 40;      /* graphite-navy panel */
+  --ink: 232 234 243;
+  --ink-2: 163 169 194;
+  --ink-3: 104 112 143;
+  --line: 148 163 209;    /* used at low alpha for hairlines */
+  --violet: 124 92 255;   /* electric violet */
+  --cyan: 34 211 238;
+  --coral: 255 92 108;    /* fraud / critical */
+  --amber: 245 184 75;    /* medium risk */
+  --mint: 52 211 153;     /* low risk */
+  --grid-alpha: 0.05;
+  color-scheme: dark;
+}
+
+.light {
+  --bg: 246 243 238;      /* warm off-white */
+  --bg-2: 239 235 228;
+  --panel: 255 253 250;
+  --ink: 18 20 43;
+  --ink-2: 74 79 107;
+  --ink-3: 125 129 150;
+  --line: 28 32 64;
+  --violet: 91 61 245;
+  --cyan: 8 145 178;
+  --coral: 220 52 70;
+  --amber: 196 128 14;
+  --mint: 5 150 105;
+  --grid-alpha: 0.06;
+  color-scheme: light;
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    @apply bg-bg text-ink font-sans;
+    transition: background-color 0.45s ease, color 0.45s ease;
+  }
+  /* Subtle engineering-grid backdrop */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgb(var(--line) / var(--grid-alpha)) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--line) / var(--grid-alpha)) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 60% 0%, black 0%, transparent 75%);
+  }
+  ::selection { background: rgb(var(--violet) / 0.35); }
+  input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+  :focus-visible { outline: 2px solid rgb(var(--cyan)); outline-offset: 2px; border-radius: 4px; }
+}
+
+@layer components {
+  /* Layered glass panel with a hairline border */
+  .panel {
+    @apply relative min-w-0 rounded-md border border-line/[0.12] bg-panel/70 backdrop-blur-md;
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 24px 48px -32px rgb(0 0 0 / 0.5);
+  }
+  .light .panel { box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.9) inset, 0 18px 40px -30px rgb(18 20 43 / 0.25); }
+  .panel-head { @apply flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.10] px-5 py-3; }
+  .kicker { @apply font-mono text-[10.5px] uppercase tracking-kicker text-ink-3; }
+  .label { @apply font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-3; }
+  .num { @apply font-mono tabular-nums; }
+  .hairline { @apply border-line/[0.10]; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded px-3.5 py-2 text-[13px] font-semibold
+      transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn text-white;
+    background: linear-gradient(120deg, rgb(var(--violet)), rgb(var(--violet) / 0.85) 55%, rgb(var(--cyan) / 0.9));
+    box-shadow: 0 8px 24px -10px rgb(var(--violet) / 0.8);
+  }
+  .btn-primary:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-ghost { @apply btn border border-line/[0.16] text-ink-2 hover:border-line/30 hover:text-ink hover:bg-line/[0.05]; }
+  .btn-danger { @apply btn border border-coral/40 text-coral hover:bg-coral/10; }
+
+  .input {
+    @apply w-full rounded border border-line/[0.16] bg-bg/60 px-3 py-2 text-[13px] text-ink
+      placeholder:text-ink-3 transition-colors focus:border-violet/70 focus:outline-none;
+  }
+  .select { @apply input appearance-none pr-8; background-image: none; }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-xs border px-1.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wider;
+  }
+  .table-head th { @apply label whitespace-nowrap px-3 py-2.5 text-left font-medium; }
+  .table-row td { @apply whitespace-nowrap px-3 py-2.5 text-[13px]; }
+
+  .grad-text {
+    background: linear-gradient(100deg, rgb(var(--violet)), rgb(var(--cyan)));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+}
+
+/* Range slider */
+input[type="range"].range { @apply h-1 w-full cursor-pointer appearance-none rounded-full bg-line/20; }
+input[type="range"].range::-webkit-slider-thumb {
+  @apply h-4 w-4 appearance-none rounded-full border-2 border-white bg-violet shadow;
+  box-shadow: 0 0 0 4px rgb(var(--violet) / 0.25);
+}
+input[type="range"].range::-moz-range-thumb { @apply h-4 w-4 rounded-full border-2 border-white bg-violet; }
+
+/* Thin scrollbars */
+* { scrollbar-width: thin; scrollbar-color: rgb(var(--line) / 0.25) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgb(var(--line) / 0.2); border-radius: 8px; }
+
+/* Recharts polish */
+.recharts-cartesian-grid line { stroke: rgb(var(--line) / 0.08); }
+.recharts-text { fill: rgb(var(--ink-3)); font-family: "JetBrains Mono", monospace; font-size: 10.5px; }
+.recharts-legend-item-text { color: rgb(var(--ink-2)) !important; font-size: 12px; }
+.recharts-tooltip-cursor { fill: rgb(var(--line) / 0.06); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}

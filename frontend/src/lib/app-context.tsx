@@ -1,0 +1,130 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { get, put } from "./api";
+import type { Health, ModelName, Settings } from "./types";
+
+type Theme = "dark" | "light";
+export interface Toast {
+  id: number;
+  tone: "info" | "success" | "danger" | "warn";
+  title: string;
+  body?: string;
+  href?: string;
+}
+
+interface Ctx {
+  theme: Theme;
+  toggleTheme: () => void;
+  settings: Settings | null;
+  refreshSettings: () => Promise<void>;
+  setActiveModel: (m: ModelName) => Promise<void>;
+  health: Health | null;
+  healthError: string | null;
+  toasts: Toast[];
+  notify: (t: Omit<Toast, "id">) => void;
+  dismiss: (id: number) => void;
+  /** increments whenever data changed somewhere (prediction, generation...) so pages can refetch */
+  dataVersion: number;
+  bumpData: () => void;
+}
+
+const AppCtx = createContext<Ctx | null>(null);
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.classList.contains("light") ? "light" : "dark",
+  );
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [dataVersion, setDataVersion] = useState(0);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(theme);
+    try {
+      localStorage.setItem("tranziq-theme", theme);
+    } catch {
+      /* storage blocked */
+    }
+  }, [theme]);
+
+  const notify = useCallback((t: Omit<Toast, "id">) => {
+    const id = Date.now() + Math.random();
+    setToasts((ts) => [...ts.slice(-3), { ...t, id }]);
+    setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== id)), 6000);
+  }, []);
+  const dismiss = useCallback((id: number) => setToasts((ts) => ts.filter((x) => x.id !== id)), []);
+
+  const refreshSettings = useCallback(async () => {
+    try {
+      setSettings(await get<Settings>("/api/settings"));
+    } catch {
+      /* surfaced by health */
+    }
+  }, []);
+
+  const checkHealth = useCallback(async () => {
+    try {
+      setHealth(await get<Health>("/api/health"));
+      setHealthError(null);
+    } catch (e) {
+      setHealthError(e instanceof Error ? e.message : "API unreachable");
+    }
+  }, []);
+
+  useEffect(() => {
+    checkHealth();
+    refreshSettings();
+    const t = setInterval(checkHealth, 30000);
+    return () => clearInterval(t);
+  }, [checkHealth, refreshSettings]);
+
+  const setActiveModel = useCallback(
+    async (m: ModelName) => {
+      try {
+        setSettings(await put<Settings>("/api/settings", { active_model: m }));
+        setDataVersion((v) => v + 1);
+        notify({ tone: "success", title: "Active model switched", body: `Dashboards now use ${m.replace(/_/g, " ")}.` });
+      } catch (e) {
+        notify({ tone: "danger", title: "Could not switch model", body: String(e) });
+      }
+    },
+    [notify],
+  );
+
+  const value = useMemo<Ctx>(
+    () => ({
+      theme, toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+      settings, refreshSettings, setActiveModel, health, healthError, toasts, notify, dismiss,
+      dataVersion, bumpData: () => setDataVersion((v) => v + 1),
+    }),
+    [theme, settings, refreshSettings, setActiveModel, health, healthError, toasts, notify, dismiss, dataVersion],
+  );
+  return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
+}
+
+export function useApp() {
+  const c = useContext(AppCtx);
+  if (!c) throw new Error("useApp outside AppProvider");
+  return c;
+}
+
+/** Resolved colour strings for Recharts (SVG attributes can't read CSS variables). */
+export function useChartColors() {
+  const { theme } = useApp();
+  return useMemo(() => {
+    const css = getComputedStyle(document.documentElement);
+    const c = (n: string, a = 1) => `rgb(${css.getPropertyValue(`--${n}`).trim().split(" ").join(",")}${a < 1 ? `,${a}` : ""})`.replace("rgb(", a < 1 ? "rgba(" : "rgb(");
+    return {
+      violet: c("violet"), cyan: c("cyan"), coral: c("coral"), amber: c("amber"), mint: c("mint"),
+      ink: c("ink"), ink2: c("ink-2"), ink3: c("ink-3"), grid: c("line", 0.1), panel: c("panel"), bg: c("bg"),
+      violetSoft: c("violet", 0.25), cyanSoft: c("cyan", 0.22), coralSoft: c("coral", 0.25),
+      models: { logistic_regression: c("amber"), random_forest: c("cyan"), xgboost: c("violet") } as Record<string, string>,
+      risk: { low: c("mint"), medium: c("amber"), high: c("coral", 0.7), critical: c("coral") } as Record<string, string>,
+      source: { kaggle: c("cyan"), synthetic: c("violet"), user: c("amber") } as Record<string, string>,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
+}
