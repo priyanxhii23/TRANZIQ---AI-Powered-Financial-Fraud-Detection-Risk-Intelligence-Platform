@@ -12,7 +12,7 @@ import { RiskMeter } from "../components/viz";
 
 const STATUS: { value: AlertStatus; label: string; icon: typeof CircleDot; tone: string }[] = [
   { value: "pending", label: "Pending", icon: CircleDot, tone: "amber" },
-  { value: "investigating", label: "Investigating", icon: Search, tone: "violet" },
+  { value: "investigating", label: "Investigating", icon: Search, tone: "primary" },
   { value: "confirmed", label: "Confirmed", icon: CheckCircle2, tone: "coral" },
   { value: "dismissed", label: "Dismissed", icon: XCircle, tone: "ink-3" },
 ];
@@ -111,15 +111,14 @@ export default function Alerts() {
 
   return (
     <div>
-      <PageHeader index="08" kicker="Fraud Alert & Investigation Center" title="Triage," accent="investigate, decide."
-        intro="Alerts are raised when the active model flags a transaction or its probability falls in the High or Critical band. Each decision is persisted with a timestamp.">
+      <PageHeader index="08" kicker="Fraud Alert & Investigation Center" title="Triage," accent="investigate, decide.">
         <button className="btn-ghost" onClick={() => download("/api/reports/alerts.csv")}><Download size={14} />Export alerts</button>
       </PageHeader>
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[{ value: "all" as const, label: "All alerts", tone: "ink", n: summary.data?.total }, ...STATUS.map((s) => ({ ...s, n: summary.data?.by_status[s.value] }))].map((s, i) => (
           <motion.button key={s.value} onClick={() => setStatus(s.value)} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className={`panel p-4 text-left transition-colors ${status === s.value ? "border-violet/50" : "hover:border-line/25"}`}>
+            className={`panel p-4 text-left transition-colors ${status === s.value ? "border-primary/50" : "hover:border-line/25"}`}>
             <div className="label flex items-center gap-2">{s.value === "pending" && <PulseDot color="rgb(var(--amber))" size={6} />}{s.label}</div>
             <div className="mt-1 font-display text-4xl" style={{ color: `rgb(var(--${s.tone}))` }}>{s.n?.toLocaleString() ?? "—"}</div>
           </motion.button>
@@ -137,7 +136,7 @@ export default function Alerts() {
             <div className="divide-y divide-line/[0.06]">
               {list.data.items.map((a) => (
                 <button key={a.id} onClick={() => setSelected(a)}
-                  className={`flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors ${selected?.id === a.id ? "bg-violet/[0.08]" : "hover:bg-line/[0.04]"}`}>
+                  className={`flex w-full items-center gap-4 px-5 py-3.5 text-left transition-colors ${selected?.id === a.id ? "bg-primary/[0.08]" : "hover:bg-line/[0.04]"}`}>
                   <PulseDot color={RISK_META[a.severity].color} pulse={a.status === "pending" && (a.severity === "critical" || a.severity === "high")} size={9} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2"><span className="num text-[13px]">#{a.id} · {a.transaction.external_id}</span><SourceChip source={a.transaction.source} /></div>

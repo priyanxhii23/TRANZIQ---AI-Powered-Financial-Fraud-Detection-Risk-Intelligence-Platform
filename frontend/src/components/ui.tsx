@@ -37,7 +37,7 @@ export function PageHeader({ index, kicker, title, accent, intro, children }: {
     <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div className="max-w-3xl">
         <div className="kicker mb-3 flex items-center gap-3">
-          <span className="text-violet">{index}</span>
+          <span className="text-primary">{index}</span>
           <span className="h-px w-8 bg-line/30" />
           {kicker}
         </div>
@@ -97,7 +97,7 @@ export function SourceChip({ source }: { source: Source }) {
 }
 
 export function LabelChip({ label }: { label: number | null }) {
-  if (label == null) return <span className="font-mono text-[11px] text-ink-3" title="No ground truth for this record">n/a</span>;
+  if (label == null) return <span className="font-mono text-[11px] text-ink-3" title="No verified label exists for this record">N/A</span>;
   return (
     <span className={`chip ${label ? "border-coral/40 text-coral" : "border-mint/40 text-mint"}`} title="Known Kaggle label (ground truth)">
       {label ? "Fraud" : "Legit"}
@@ -141,7 +141,7 @@ export function Segmented<T extends string>({ options, value, onChange, size = "
           className={`relative rounded-sm font-medium transition-colors ${size === "sm" ? "px-2.5 py-1 text-[11.5px]" : "px-3 py-1.5 text-[12.5px]"} ${value === o.value ? "text-ink" : "text-ink-3 hover:text-ink-2"}`}
         >
           {value === o.value && (
-            <motion.span layoutId={id} className="absolute inset-0 rounded-sm border border-violet/40 bg-violet/15"
+            <motion.span layoutId={id} className="absolute inset-0 rounded-sm border border-primary/40 bg-primary/15"
               transition={{ type: "spring", stiffness: 500, damping: 38 }} />
           )}
           <span className="relative">{o.label}</span>
@@ -163,7 +163,7 @@ export function Field({ label, hint, children, className = "" }: { label: string
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode }) {
   return (
     <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-2.5 text-[13px] text-ink-2" aria-pressed={checked}>
-      <span className={`relative h-5 w-9 rounded-full border transition-colors ${checked ? "border-violet/60 bg-violet/40" : "border-line/20 bg-line/10"}`}>
+      <span className={`relative h-5 w-9 rounded-full border transition-colors ${checked ? "border-primary/60 bg-primary/40" : "border-line/20 bg-line/10"}`}>
         <motion.span layout className={`absolute top-0.5 h-3.5 w-3.5 rounded-full ${checked ? "right-0.5 bg-white" : "left-0.5 bg-ink-3"}`}
           transition={{ type: "spring", stiffness: 600, damping: 35 }} />
       </span>
@@ -190,8 +190,8 @@ export function Loading({ label = "Loading intelligence", className = "h-40" }: 
   return (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
       <div className="relative h-8 w-8">
-        <span className="absolute inset-0 animate-ping rounded-full border border-violet/50" />
-        <Loader2 className="relative h-8 w-8 animate-spin text-violet" strokeWidth={1.5} />
+        <span className="absolute inset-0 animate-ping rounded-full border border-primary/50" />
+        <Loader2 className="relative h-8 w-8 animate-spin text-primary" strokeWidth={1.5} />
       </div>
       <span className="kicker">{label}</span>
     </div>
@@ -332,6 +332,49 @@ export function Stat({ label, value, sub, tone }: { label: string; value: ReactN
       <div className="label">{label}</div>
       <div className="num mt-1 text-[22px] font-medium" style={tone ? { color: tone } : undefined}>{value}</div>
       {sub && <div className="mt-0.5 text-[11.5px] text-ink-3">{sub}</div>}
+    </div>
+  );
+}
+
+/* ---------- Info tooltip (hover + keyboard focus) ---------- */
+export function InfoTip({ text, side = "top" }: { text: ReactNode; side?: "top" | "bottom" }) {
+  const [open, setOpen] = useState(false);
+  const id = useRef(`tip${Math.random().toString(36).slice(2)}`).current;
+  return (
+    <span className="relative inline-flex align-middle normal-case tracking-normal">
+      <button type="button" aria-describedby={open ? id : undefined} aria-label="More information"
+        onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
+        onClick={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-line/30 font-sans text-[9px] font-bold text-ink-3 hover:border-primary hover:text-primary">i</button>
+      <AnimatePresence>
+        {open && (
+          <motion.span id={id} role="tooltip" initial={{ opacity: 0, y: side === "top" ? 4 : -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className={`absolute left-1/2 z-50 w-64 -translate-x-1/2 rounded border border-line/20 bg-bg-2 px-3 py-2 text-left font-sans text-[12px] font-normal leading-snug text-ink-2 shadow-xl ${side === "top" ? "bottom-6" : "top-6"}`}>
+            {text}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/* ---------- Insight panel under charts ---------- */
+export function Insight({ title = "What this chart tells you", children, defaultOpen = false }: { title?: string; children: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-t border-line/[0.10]">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left text-[12.5px] font-semibold text-ink-2 transition-colors hover:text-ink">
+        <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-secondary" />{title}</span>
+        <motion.span animate={{ rotate: open ? 90 : 0 }}><ChevronRight size={14} /></motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+            <div className="space-y-2 px-5 pb-4 text-[12.5px] leading-relaxed text-ink-2 [&_b]:font-semibold [&_b]:text-ink">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

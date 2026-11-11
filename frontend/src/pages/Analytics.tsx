@@ -28,7 +28,7 @@ interface Eda {
 function Heatmap({ eda }: { eda: Eda }) {
   const [hover, setHover] = useState<string | null>(null);
   const cols = eda.correlation.columns;
-  const color = (v: number) => (v >= 0 ? `rgb(var(--coral) / ${Math.min(1, Math.abs(v)) * 0.95})` : `rgb(var(--cyan) / ${Math.min(1, Math.abs(v)) * 0.95})`);
+  const color = (v: number) => (v >= 0 ? `rgb(var(--coral) / ${Math.min(1, Math.abs(v)) * 0.95})` : `rgb(var(--secondary) / ${Math.min(1, Math.abs(v)) * 0.95})`);
   return (
     <div>
       <div className="overflow-x-auto">
@@ -48,7 +48,7 @@ function Heatmap({ eda }: { eda: Eda }) {
       </div>
       <div className="mt-3 flex items-center justify-between font-mono text-[11px] text-ink-3">
         <span className="text-ink-2">{hover ?? "Hover a cell"}</span>
-        <span className="flex items-center gap-2">−1<span className="h-1.5 w-24 rounded-full" style={{ background: "linear-gradient(90deg, rgb(var(--cyan)), transparent, rgb(var(--coral)))" }} />+1</span>
+        <span className="flex items-center gap-2">−1<span className="h-1.5 w-24 rounded-full" style={{ background: "linear-gradient(90deg, rgb(var(--secondary)), transparent, rgb(var(--coral)))" }} />+1</span>
       </div>
       <p className="mt-2 text-[11.5px] text-ink-3">V1–V28 are PCA components, so they are uncorrelated with each other by construction — the informative row is <b>Class</b>.</p>
     </div>
@@ -68,8 +68,7 @@ export default function Analytics() {
 
   return (
     <div>
-      <PageHeader index="09" kicker="Fraud Trends & Analytics" title="Patterns over" accent="time."
-        intro="Live trends use the selected model's latest prediction for every stored transaction. The second half profiles the real Kaggle dataset itself.">
+      <PageHeader index="09" kicker="Fraud Trends & Analytics" title="Patterns over" accent="time.">
         <Segmented size="sm" value={gran} onChange={setGran} options={[{ value: "day", label: "Daily" }, { value: "hour", label: "Hourly" }]} />
         <Select value={source} onChange={setSource} className="w-36" options={[{ value: "", label: "All sources" }, { value: "kaggle", label: "Real (Kaggle)" }, { value: "synthetic", label: "Synthetic" }, { value: "user", label: "User" }]} />
         <Select value={model} onChange={setModel} className="w-44" options={[{ value: "", label: "Active model" }, ...MODELS.map((m) => ({ value: m, label: MODEL_LABELS[m] }))]} />
@@ -126,7 +125,7 @@ export default function Analytics() {
                     <Tooltip content={<ChartTip fmt={(v, n) => (n === "Mean probability" ? `${(v * 100).toFixed(2)}%` : v.toLocaleString())} labelFmt={(l) => fmtDate(String(l))} />} />
                     <Legend />
                     <Bar yAxisId="a" dataKey="predicted_fraud" name="Predicted fraud" fill={c.coral} radius={[2, 2, 0, 0]} />
-                    <Line yAxisId="b" dataKey="mean_probability" name="Mean probability" stroke={c.violet} dot={false} strokeWidth={2} />
+                    <Line yAxisId="b" dataKey="mean_probability" name="Mean probability" stroke={c.primary} dot={false} strokeWidth={2} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -161,7 +160,7 @@ export default function Analytics() {
                     <YAxis yAxisId="a" tickLine={false} axisLine={false} />
                     <YAxis yAxisId="b" orientation="right" tickLine={false} axisLine={false} unit="%" />
                     <Tooltip content={<ChartTip />} />
-                    <Bar yAxisId="a" dataKey="count" name="Transactions" fill={c.cyan} fillOpacity={0.7} radius={[2, 2, 0, 0]} />
+                    <Bar yAxisId="a" dataKey="count" name="Transactions" fill={c.secondary} fillOpacity={0.7} radius={[2, 2, 0, 0]} />
                     <Line yAxisId="b" dataKey="flag_rate_pct" name="Flag rate %" stroke={c.coral} strokeWidth={2} dot={{ r: 3 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -174,7 +173,7 @@ export default function Analytics() {
                   <RadarChart data={t.data.hourly_activity.map((h) => ({ ...h, label: `${h.hour}h` }))} outerRadius="75%">
                     <PolarGrid stroke={c.grid} />
                     <PolarAngleAxis dataKey="label" tick={{ fontSize: 9, fill: c.ink3 }} />
-                    <Radar dataKey="count" name="Transactions" stroke={c.cyan} fill={c.cyan} fillOpacity={0.2} />
+                    <Radar dataKey="count" name="Transactions" stroke={c.secondary} fill={c.secondary} fillOpacity={0.2} />
                     <Radar dataKey="predicted_fraud" name="Predicted fraud" stroke={c.coral} fill={c.coral} fillOpacity={0.35} />
                     <Tooltip content={<ChartTip />} />
                     <Legend />
@@ -191,7 +190,7 @@ export default function Analytics() {
                     <XAxis dataKey="day" tickLine={false} axisLine={false} />
                     <YAxis tickLine={false} axisLine={false} />
                     <Tooltip content={<ChartTip />} />
-                    <Bar dataKey="count" name="Transactions" fill={c.violet} radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="count" name="Transactions" fill={c.primary} radius={[3, 3, 0, 0]} />
                     <Bar dataKey="predicted_fraud" name="Predicted fraud" fill={c.coral} radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -233,9 +232,9 @@ export default function Analytics() {
                     <YAxis yAxisId="b" orientation="right" unit="%" tickLine={false} axisLine={false} />
                     <Tooltip content={<ChartTip />} />
                     <Legend />
-                    <Bar yAxisId="a" dataKey="legitimate" name="Legitimate" fill={c.cyan} fillOpacity={0.7} />
+                    <Bar yAxisId="a" dataKey="legitimate" name="Legitimate" fill={c.secondary} fillOpacity={0.7} />
                     <Bar yAxisId="a" dataKey="fraud" name="Fraud" fill={c.coral} />
-                    <Line yAxisId="b" dataKey="fraud_rate_pct" name="Fraud rate %" stroke={c.violet} strokeWidth={2} />
+                    <Line yAxisId="b" dataKey="fraud_rate_pct" name="Fraud rate %" stroke={c.primary} strokeWidth={2} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -251,7 +250,7 @@ export default function Analytics() {
                     <YAxis yAxisId="b" orientation="right" tickLine={false} axisLine={false} />
                     <Tooltip content={<ChartTip labelFmt={(l) => `hour ${l}`} />} />
                     <Legend />
-                    <Area yAxisId="a" dataKey="legitimate" name="Legitimate" stroke={c.cyan} fill={c.cyan} fillOpacity={0.2} />
+                    <Area yAxisId="a" dataKey="legitimate" name="Legitimate" stroke={c.secondary} fill={c.secondary} fillOpacity={0.2} />
                     <Line yAxisId="b" dataKey="fraud" name="Fraud (right axis)" stroke={c.coral} strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -270,7 +269,7 @@ export default function Analytics() {
                         <div>{String(payload[0].payload.feature)} · corr {fmtNum(Number(payload[0].payload.corr_with_class), 3)}</div>
                         <div className="text-ink-3">mean legit {fmtNum(Number(payload[0].payload.legit_mean), 3)} · fraud {fmtNum(Number(payload[0].payload.fraud_mean), 3)}</div>
                       </div>) : null} />
-                    <Bar dataKey="corr_with_class" name="Correlation" radius={2}>{corr.map((d) => <Cell key={d.feature} fill={d.corr_with_class < 0 ? c.cyan : c.coral} />)}</Bar>
+                    <Bar dataKey="corr_with_class" name="Correlation" radius={2}>{corr.map((d) => <Cell key={d.feature} fill={d.corr_with_class < 0 ? c.secondary : c.coral} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

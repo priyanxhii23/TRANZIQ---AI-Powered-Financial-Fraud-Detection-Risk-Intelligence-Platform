@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Activity, BellRing, BrainCircuit, FileBarChart2, FlaskConical, Gauge, LayoutGrid, Menu, Moon, ScanLine,
-  Search, Sparkles, Sun, TrendingUp, X,
+  Activity, BellRing, BrainCircuit, FileBarChart2, FlaskConical, Gauge, LayoutGrid, Menu, Play, ScanLine,
+  Search, Swords, TrendingUp, X,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -10,7 +10,9 @@ import { useApp } from "../lib/app-context";
 import { fmtMoney, fmtProb } from "../lib/format";
 import { useApi } from "../lib/hooks";
 import { MODEL_LABELS, MODELS, type AlertSummary, type ModelName, type Tx } from "../lib/types";
+import { AmbientBackground } from "./Ambient";
 import { BrandMark, Logo } from "./Brand";
+import { ThemeSwitch } from "./ThemeSwitch";
 import { PulseDot } from "./ui";
 
 export const NAV = [
@@ -18,9 +20,9 @@ export const NAV = [
   { to: "/scanner", label: "Fraud Scanner", icon: ScanLine, n: "02" },
   { to: "/models", label: "Model Lab", icon: FlaskConical, n: "03" },
   { to: "/transactions", label: "Explorer", icon: Search, n: "04" },
-  { to: "/risk", label: "Risk Engine", icon: Gauge, n: "05" },
+  { to: "/risk", label: "Risk Center", icon: Gauge, n: "05" },
   { to: "/explain", label: "XAI Studio", icon: BrainCircuit, n: "06" },
-  { to: "/synthetic", label: "Generator", icon: Sparkles, n: "07" },
+  { to: "/scenarios", label: "Scenario Lab", icon: Swords, n: "07" },
   { to: "/alerts", label: "Alert Center", icon: BellRing, n: "08" },
   { to: "/analytics", label: "Trends", icon: TrendingUp, n: "09" },
   { to: "/reports", label: "Reports", icon: FileBarChart2, n: "10" },
@@ -37,11 +39,11 @@ function NavItems({ onNavigate, pending }: { onNavigate?: () => void; pending: n
           {({ isActive }) => (
             <>
               {isActive && (
-                <motion.span layoutId="nav-active" className="absolute inset-0 rounded border border-violet/30 bg-gradient-to-r from-violet/20 to-transparent"
+                <motion.span layoutId="nav-active" className="absolute inset-0 rounded border border-primary/30 bg-gradient-to-r from-primary/20 to-transparent"
                   transition={{ type: "spring", stiffness: 420, damping: 36 }} />
               )}
-              {isActive && <motion.span layoutId="nav-bar" className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-violet" />}
-              <span className={`relative font-mono text-[10px] ${isActive ? "text-violet" : "text-ink-3/70"}`}>{item.n}</span>
+              {isActive && <motion.span layoutId="nav-bar" className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-primary" />}
+              <span className={`relative font-mono text-[10px] ${isActive ? "text-primary" : "text-ink-3/70"}`}>{item.n}</span>
               <item.icon size={15} strokeWidth={1.7} className="relative" />
               <span className="relative font-medium">{item.label}</span>
               {item.to === "/alerts" && pending > 0 && (
@@ -60,13 +62,13 @@ function ModelSwitch() {
   if (!settings) return null;
   return (
     <div className="rounded border border-line/[0.12] bg-bg/40 p-2.5">
-      <div className="label mb-2 flex items-center justify-between">Active model {settings.active_model === settings.best_model && <span className="text-violet">best</span>}</div>
+      <div className="label mb-2 flex items-center justify-between">Active model {settings.active_model === settings.best_model && <span className="text-primary">best</span>}</div>
       <div className="flex flex-col gap-1">
         {MODELS.map((m) => (
           <button key={m} onClick={() => m !== settings.active_model && setActiveModel(m as ModelName)}
             className={`flex items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors ${
-              settings.active_model === m ? "bg-violet/15 text-ink" : "text-ink-3 hover:text-ink-2"}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${settings.active_model === m ? "bg-violet" : "bg-line/30"}`} />
+              settings.active_model === m ? "bg-primary/15 text-ink" : "text-ink-3 hover:text-ink-2"}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${settings.active_model === m ? "bg-primary" : "bg-line/30"}`} />
             {MODEL_LABELS[m]}
           </button>
         ))}
@@ -76,7 +78,7 @@ function ModelSwitch() {
 }
 
 function SystemStatus() {
-  const { health, healthError, theme, toggleTheme } = useApp();
+  const { health, healthError } = useApp();
   const ok = health?.status === "ok" && !healthError;
   return (
     <div className="flex items-center justify-between gap-2">
@@ -84,14 +86,7 @@ function SystemStatus() {
         <PulseDot color={ok ? "rgb(var(--mint))" : "rgb(var(--coral))"} size={7} />
         <span className="font-mono text-[10.5px] uppercase tracking-wider text-ink-3">{ok ? "API online" : healthError ? "API offline" : "Degraded"}</span>
       </div>
-      <motion.button whileTap={{ scale: 0.9, rotate: -20 }} onClick={toggleTheme}
-        className="btn-ghost px-2 py-1.5" aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span key={theme} initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }}>
-            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-          </motion.span>
-        </AnimatePresence>
-      </motion.button>
+      <ThemeSwitch compact />
     </div>
   );
 }
@@ -121,7 +116,7 @@ function Ticker() {
   return (
     <div className="group relative flex h-9 items-center overflow-hidden border-b border-line/[0.08] bg-bg-2/40" aria-label="Live transaction stream">
       <div className="z-10 flex h-full shrink-0 items-center gap-2 border-r border-line/[0.1] bg-bg-2 px-3">
-        <Activity size={12} className="text-cyan" />
+        <Activity size={12} className="text-secondary" />
         <span className="font-mono text-[10px] uppercase tracking-kicker text-ink-3">Live feed</span>
       </div>
       <div className="flex animate-ticker group-hover:[animation-play-state:paused]">{row("a")}{row("b")}</div>
@@ -148,7 +143,7 @@ function useAlertWatcher() {
 function Toasts() {
   const { toasts, dismiss } = useApp();
   const nav = useNavigate();
-  const tone = { info: "violet", success: "mint", danger: "coral", warn: "amber" } as const;
+  const tone = { info: "primary", success: "mint", danger: "coral", warn: "amber" } as const;
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[340px] max-w-[calc(100vw-2rem)] flex-col gap-2" aria-live="polite">
       <AnimatePresence>
@@ -195,9 +190,11 @@ export function Layout({ children }: { children: ReactNode }) {
   useEffect(() => { window.scrollTo({ top: 0 }); }, [loc.pathname]);
 
   return (
+    <>
+    <AmbientBackground />
     <div className="relative z-10 flex min-h-screen">
       {/* Desktop rail */}
-      <aside className="sticky top-0 hidden h-screen w-[244px] shrink-0 flex-col border-r border-line/[0.10] bg-bg-2/50 px-3 py-5 backdrop-blur-xl lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[244px] shrink-0 flex-col border-r border-line/[0.10] bg-bg-2/60 px-3 py-5 backdrop-blur-xl lg:flex">
         <div className="px-3"><Logo /></div>
         <div className="kicker mb-2 mt-8 px-3">Navigation</div>
         <div className="flex-1 overflow-y-auto pl-3"><NavItems pending={pending} /></div>
@@ -238,11 +235,13 @@ export function Layout({ children }: { children: ReactNode }) {
           </motion.main>
         </AnimatePresence>
         <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line/[0.08] px-6 py-4 font-mono text-[10.5px] uppercase tracking-wider text-ink-3 lg:px-10">
-          <span className="flex items-center gap-2"><BrandMark size={14} /> TRANZIQ · Intelligence Behind Every Transaction.</span>
+          <span className="flex items-center gap-2"><BrandMark size={14} /> TRANZIQ · Intelligence Behind Every Transaction.
+            <button className="ml-3 inline-flex items-center gap-1 text-primary hover:underline" onClick={() => window.dispatchEvent(new Event("tranziq:replay"))}><Play size={10} />Replay intro</button></span>
           <span>Educational portfolio project · predictions are not financial decisions</span>
         </footer>
       </div>
       <Toasts />
     </div>
+    </>
   );
 }

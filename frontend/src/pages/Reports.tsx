@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Database, Download, FileJson, FileSpreadsheet, FileText, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, Database, Download, FileDown, FileJson, FileSpreadsheet, FileText, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { useState } from "react";
 import { API_BASE, download, get, post, qs } from "../lib/api";
 import { useApp } from "../lib/app-context";
@@ -23,6 +23,35 @@ interface DatasetInfo {
 }
 const PLOTS = ["class_distribution", "amount_distribution", "time_distribution", "correlation_heatmap"];
 
+function PdfButton() {
+  const { notify } = useApp();
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const go = async () => {
+    setState("busy");
+    try {
+      const res = await fetch(`${API_BASE}/api/reports/pdf`);
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const blob = await res.blob();
+      const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "tranziq_report.pdf";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setState("done");
+      notify({ tone: "success", title: "PDF report downloaded", body: `${name} · ${(blob.size / 1024).toFixed(0)} KB` });
+      setTimeout(() => setState("idle"), 3000);
+    } catch (e) {
+      setState("idle");
+      notify({ tone: "danger", title: "Could not generate the PDF report", body: String(e) });
+    }
+  };
+  return (
+    <motion.button whileTap={{ scale: 0.97 }} onClick={go} disabled={state === "busy"} className="btn-primary px-5 py-2.5 tracking-wider">
+      {state === "busy" ? <Loader2 size={15} className="animate-spin" /> : state === "done" ? <CheckCircle2 size={15} /> : <FileDown size={15} />}
+      {state === "busy" ? "GENERATING PDF…" : state === "done" ? "PDF DOWNLOADED" : "DOWNLOAD PDF REPORT"}
+    </motion.button>
+  );
+}
+
 export default function Reports() {
   const { health, healthError, notify, dataVersion } = useApp();
   const mon = useApi(() => get<Monitoring>("/api/monitoring"), [dataVersion], { interval: 30000 });
@@ -44,7 +73,7 @@ export default function Reports() {
 
   return (
     <div>
-      <PageHeader index="10" kicker="Reports & Model Monitoring" title="Evidence," accent="exported." intro="Download transaction data and evaluation reports, and keep an eye on model versions, prediction volume and application health." />
+      <PageHeader index="10" kicker="Reports & Model Monitoring" title="Evidence," accent="exported."><PdfButton /></PageHeader>
 
       <div className="grid gap-5 xl:grid-cols-12">
         <Panel className="xl:col-span-4">
@@ -77,8 +106,8 @@ export default function Reports() {
                   <thead className="table-head"><tr><th>Model</th><th>Version</th><th>Trained</th><th>Status</th><th className="text-right">Predictions</th><th className="text-right">Flagged</th><th>Last prediction</th></tr></thead>
                   <tbody>
                     {mon.data.models.map((m) => (
-                      <tr key={m.name} className={`table-row border-t border-line/[0.06] ${m.name === mon.data!.active_model ? "bg-violet/[0.05]" : ""}`}>
-                        <td className="font-semibold">{m.label} {m.name === mon.data!.active_model && <span className="chip ml-1 border-violet/40 text-violet">active</span>}{m.name === mon.data!.training?.best_model && <span className="chip ml-1 border-cyan/40 text-cyan">best</span>}</td>
+                      <tr key={m.name} className={`table-row border-t border-line/[0.06] ${m.name === mon.data!.active_model ? "bg-primary/[0.05]" : ""}`}>
+                        <td className="font-semibold">{m.label} {m.name === mon.data!.active_model && <span className="chip ml-1 border-primary/40 text-primary">active</span>}{m.name === mon.data!.training?.best_model && <span className="chip ml-1 border-secondary/40 text-secondary">best</span>}</td>
                         <td className="num text-[12px] text-ink-2">{m.version}</td>
                         <td className="num text-[12px] text-ink-3">{fmtDate(m.trained_at)}</td>
                         <td>{m.loaded ? <span className="flex items-center gap-1.5 text-[12px] text-mint"><PulseDot color="rgb(var(--mint))" size={6} />loaded</span> : <span className="text-[12px] text-ink-3">on disk</span>}</td>
@@ -114,7 +143,7 @@ export default function Reports() {
           <PanelHead kicker="Exports" title="Downloads" />
           <div className="space-y-5 p-5">
             <div className="rounded border border-line/[0.1] p-4">
-              <div className="flex items-center gap-2 font-semibold"><FileSpreadsheet size={16} className="text-cyan" />Transaction export (CSV)</div>
+              <div className="flex items-center gap-2 font-semibold"><FileSpreadsheet size={16} className="text-secondary" />Transaction export (CSV)</div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <Select value={exp.model} onChange={(v) => setExp({ ...exp, model: v })} options={[{ value: "", label: "Active model" }, ...MODELS.map((m) => ({ value: m, label: MODEL_LABELS[m] }))]} />
                 <Select value={exp.source} onChange={(v) => setExp({ ...exp, source: v })} options={[{ value: "", label: "All sources" }, { value: "kaggle", label: "Real (Kaggle)" }, { value: "synthetic", label: "Synthetic" }, { value: "user", label: "User" }]} />
@@ -124,8 +153,13 @@ export default function Reports() {
                 <button className="btn-primary px-3 py-1.5 text-[12px]" onClick={() => download(`/api/reports/transactions.csv${qs({ model: exp.model, source: exp.source, include_features: exp.features || "" })}`)}><Download size={13} />Download</button>
               </div>
             </div>
+            <div className="rounded border border-primary/30 bg-primary/[0.05] p-4">
+              <div className="flex items-center gap-2 font-semibold"><FileDown size={16} className="text-primary" />Branded PDF report</div>
+              <p className="mt-1 text-[12px] text-ink-3">Executive summary, model performance (validation &amp; test), evaluation charts, methodology, risk analysis. 5 pages, A4.</p>
+              <div className="mt-3"><PdfButton /></div>
+            </div>
             <div className="rounded border border-line/[0.1] p-4">
-              <div className="flex items-center gap-2 font-semibold"><FileText size={16} className="text-violet" />Model evaluation report</div>
+              <div className="flex items-center gap-2 font-semibold"><FileText size={16} className="text-primary" />Model evaluation report</div>
               <p className="mt-1 text-[12px] text-ink-3">Real training results: ranking, imbalance experiment, threshold trade-offs, confusion matrices.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button className="btn-ghost text-[12px]" onClick={() => download("/api/reports/evaluation?format=md")}><FileText size={13} />Markdown</button>
@@ -142,7 +176,7 @@ export default function Reports() {
         </Panel>
 
         <Panel className="xl:col-span-7" delay={0.1}>
-          <PanelHead kicker="Dataset information" title="Kaggle Credit Card Fraud Detection (mlg-ulb)"><Database size={15} className="text-cyan" /></PanelHead>
+          <PanelHead kicker="Dataset information" title="Kaggle Credit Card Fraud Detection (mlg-ulb)"><Database size={15} className="text-secondary" /></PanelHead>
           {!ds.data ? <Loading /> : (
             <div className="space-y-4 p-5">
               <div className="flex items-center gap-2 text-[13px]">{ds.data.dataset_present ? <CheckCircle2 size={15} className="text-mint" /> : <XCircle size={15} className="text-coral" />}
@@ -165,7 +199,7 @@ export default function Reports() {
                   ))}
                 </div>
               )}
-              <a className="inline-block font-mono text-[11.5px] text-violet hover:underline" href={ds.data.source_url} target="_blank" rel="noreferrer">{ds.data.source_url}</a>
+              <a className="inline-block font-mono text-[11.5px] text-primary hover:underline" href={ds.data.source_url} target="_blank" rel="noreferrer">{ds.data.source_url}</a>
             </div>
           )}
         </Panel>

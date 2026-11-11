@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { download, get, post, qs } from "../lib/api";
 import { useApp } from "../lib/app-context";
-import { RISK_META, SOURCE_META, fmtDate, fmtMoney, fmtNum, fmtProb } from "../lib/format";
+import { RISK_META, fmtDate, fmtMoney, fmtNum, fmtProb } from "../lib/format";
 import { useApi, useDebounced } from "../lib/hooks";
 import { FEATURES, MODEL_LABELS, MODELS, type ModelName, type Paged, type RiskLevel, type Source, type Tx, type TxDetail } from "../lib/types";
-import { Drawer, EmptyState, ErrorState, Field, LabelChip, Loading, PageHeader, Pagination, Panel, ProbBar, RiskChip, Segmented, Select, SourceChip } from "../components/ui";
+import { Drawer, EmptyState, ErrorState, Field, LabelChip, Loading, PageHeader, Pagination, Panel, ProbBar, RiskChip, Select } from "../components/ui";
 
 type SortKey = "event_time" | "amount" | "probability" | "external_id";
 interface Filters {
@@ -37,21 +37,21 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <SourceChip source={data.source} />
-        <span className="text-[12.5px] text-ink-2">{SOURCE_META[data.source].label}</span>
-        <span className="ml-auto num text-[12px] text-ink-3">{fmtDate(data.event_time)}</span>
+        <span className="num text-[12px] text-ink-3">{fmtDate(data.event_time)}</span>
+        <span className="ml-auto font-mono text-[10.5px] uppercase tracking-wider text-ink-3" title="Kept for auditability">
+          Record origin: {ORIGIN[data.source]}</span>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div><div className="label">Amount</div><div className="font-display text-4xl">{fmtMoney(data.amount)}</div></div>
         <div><div className="label">Known label (ground truth)</div><div className="mt-2"><LabelChip label={data.ground_truth} /></div>
-          <p className="mt-1 text-[11px] text-ink-3">{data.source === "kaggle" ? "From the Kaggle dataset (test split)." : "None — not a verified case."}</p></div>
+          <p className="mt-1 text-[11px] text-ink-3">{data.ground_truth != null ? "Verified label from the historical dataset." : "N/A: no verified label exists for this record."}</p></div>
       </div>
       {data.source === "kaggle" ? (
-        <p className="rounded border border-line/[0.1] bg-bg/40 p-3 text-[12px] text-ink-3">Kaggle records carry no merchant / customer metadata. The timestamp is a replay: monitoring start + the dataset's <code>Time</code> offset.</p>
+        <p className="rounded border border-line/[0.1] bg-bg/40 p-3 text-[12px] text-ink-3">Historical records carry no merchant or customer metadata. Their timestamp replays the dataset's <code>Time</code> offset from the monitoring start date.</p>
       ) : (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
           {meta.map(([k, v]) => <div key={k}><dt className="label">{k}</dt><dd className="text-[13px]">{v ?? "—"}</dd></div>)}
-          {data.generation_profile && <div className="col-span-2"><dt className="label">Generation profile</dt><dd className="text-[13px] text-violet">{data.generation_profile} <span className="text-ink-3">(provenance, not a label)</span></dd></div>}
+          {data.generation_profile && <div className="col-span-2"><dt className="label">Generation profile</dt><dd className="text-[13px] text-ink-2">{data.generation_profile} <span className="text-ink-3">(provenance, not a label)</span></dd></div>}
         </dl>
       )}
       <div>
@@ -59,7 +59,7 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
           <button className="btn-ghost px-2 py-1 text-[11.5px]" onClick={rescore} disabled={busy}><RefreshCw size={12} className={busy ? "animate-spin" : ""} />Re-score</button></div>
         <div className="space-y-2">
           {data.predictions.map((p) => (
-            <div key={p.id} className={`flex items-center gap-3 rounded border px-3 py-2.5 ${p.model_name === settings?.active_model ? "border-violet/30 bg-violet/[0.06]" : "border-line/[0.1]"}`}>
+            <div key={p.id} className={`flex items-center gap-3 rounded border px-3 py-2.5 ${p.model_name === settings?.active_model ? "border-primary/30 bg-primary/[0.06]" : "border-line/[0.1]"}`}>
               <div className="min-w-0 flex-1"><div className="text-[13px] font-medium">{MODEL_LABELS[p.model_name]}</div>
                 <div className="font-mono text-[10.5px] text-ink-3">thr {p.threshold.toFixed(2)} · {p.predicted_label ? "flagged" : "not flagged"}</div></div>
               <ProbBar p={p.probability} threshold={p.threshold} />
@@ -91,10 +91,12 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
   );
 }
 
+const ORIGIN: Record<Source, string> = { kaggle: "historical dataset", synthetic: "simulation", user: "user submitted" };
+
 export default function Explorer() {
   const { dataVersion, settings } = useApp();
   const [params, setParams] = useSearchParams();
-  const [f, setF] = useState<Filters>(() => ({ ...initialFilters, source: (params.get("source") as Source) ?? "", risk_level: (params.get("risk") as RiskLevel) ?? "" }));
+  const [f, setF] = useState<Filters>(() => ({ ...initialFilters, risk_level: (params.get("risk") as RiskLevel) ?? "" }));
   const [showFilters, setShowFilters] = useState(true);
   const [sort, setSort] = useState<{ by: SortKey; dir: "asc" | "desc" }>({ by: "event_time", dir: "desc" });
   const [page, setPage] = useState(1);
@@ -115,7 +117,7 @@ export default function Explorer() {
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setF((s) => ({ ...s, [k]: v }));
   const th = (k: SortKey, label: string, right = false) => (
     <th className={right ? "text-right" : ""}>
-      <button className={`inline-flex items-center gap-1 hover:text-ink ${sort.by === k ? "text-violet" : ""}`}
+      <button className={`inline-flex items-center gap-1 hover:text-ink ${sort.by === k ? "text-primary" : ""}`}
         onClick={() => setSort((s) => ({ by: k, dir: s.by === k && s.dir === "desc" ? "asc" : "desc" }))}>
         {label}{sort.by === k && (sort.dir === "desc" ? <ArrowDown size={11} /> : <ArrowUp size={11} />)}
       </button>
@@ -126,9 +128,8 @@ export default function Explorer() {
 
   return (
     <div>
-      <PageHeader index="04" kicker="Transaction Intelligence Explorer" title="Search the" accent="ledger."
-        intro="Every stored transaction with its latest prediction. Real Kaggle records, synthetic demo records and user submissions are always labelled.">
-        <button className="btn-ghost" onClick={() => setShowFilters((s) => !s)}><Filter size={14} />Filters {activeCount > 0 && <span className="num text-violet">{activeCount}</span>}</button>
+      <PageHeader index="04" kicker="Transaction Intelligence Explorer" title="Search the" accent="ledger.">
+        <button className="btn-ghost" onClick={() => setShowFilters((s) => !s)}><Filter size={14} />Filters {activeCount > 0 && <span className="num text-primary">{activeCount}</span>}</button>
         <button className="btn-ghost" onClick={() => download(`/api/reports/transactions.csv${qs({ model: df.model, source: df.source, risk_level: df.risk_level, predicted_label: df.predicted_label, q: df.q, min_prob: query.min_prob })}`)}>
           <Download size={14} />Export CSV</button>
       </PageHeader>
@@ -139,8 +140,6 @@ export default function Explorer() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
             <input className="input pl-9" placeholder="Search ID, customer, merchant, city, country…" value={f.q} onChange={(e) => set("q", e.target.value)} />
           </div>
-          <Segmented size="sm" value={f.source || "all"} onChange={(v) => set("source", v === "all" ? "" : (v as Source))}
-            options={[{ value: "all", label: "All" }, { value: "kaggle", label: "Real" }, { value: "synthetic", label: "Synthetic" }, { value: "user", label: "User" }]} />
           {activeCount > 0 && <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => setF(initialFilters)}><RotateCcw size={12} />Reset</button>}
         </div>
         {showFilters && (
@@ -179,14 +178,13 @@ export default function Explorer() {
           <div className={`overflow-x-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
             <table className="w-full min-w-[960px]">
               <thead className="table-head"><tr>
-                {th("external_id", "Transaction")}<th>Source</th>{th("event_time", "Time")}<th>Merchant / location</th>
+                {th("external_id", "Transaction")}{th("event_time", "Time")}<th>Merchant / location</th>
                 {th("amount", "Amount", true)}{th("probability", "Fraud prob.")}<th>Risk</th><th>Prediction</th><th>Known label</th>
               </tr></thead>
               <tbody>
                 {data.items.map((t) => (
-                  <tr key={t.id} onClick={() => setOpenId(t.id)} className="table-row cursor-pointer border-t border-line/[0.06] transition-colors hover:bg-violet/[0.05]">
+                  <tr key={t.id} onClick={() => setOpenId(t.id)} className="table-row cursor-pointer border-t border-line/[0.06] transition-colors hover:bg-primary/[0.05]">
                     <td className="num text-ink">{t.external_id}</td>
-                    <td><SourceChip source={t.source} /></td>
                     <td className="num text-ink-3">{fmtDate(t.event_time)}</td>
                     <td className="max-w-[220px] truncate text-ink-2">{t.merchant ? <>{t.merchant} <span className="text-ink-3">· {t.city}</span></> : <span className="text-ink-3">—</span>}</td>
                     <td className="num text-right">{fmtMoney(t.amount)}</td>

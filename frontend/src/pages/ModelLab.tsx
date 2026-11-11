@@ -7,7 +7,8 @@ import { useApp, useChartColors } from "../lib/app-context";
 import { fmtDate, fmtInt, titleCase } from "../lib/format";
 import { useApi, useDebounced } from "../lib/hooks";
 import { MODEL_LABELS, MODELS, type Metrics, type ModelEval, type ModelInfo, type ModelName } from "../lib/types";
-import { ChartTip, ErrorState, Loading, PageHeader, Panel, PanelHead, Segmented, Stat } from "../components/ui";
+import { ChartTip, ErrorState, Insight, Loading, PageHeader, Panel, PanelHead, Segmented, Stat } from "../components/ui";
+import { confusionInsight, histInsight, imbalanceInsight, metricsInsight, prInsight, rocInsight, thresholdInsight } from "../lib/insights";
 import { ConfusionMatrix } from "../components/viz";
 
 interface Comparison {
@@ -46,7 +47,7 @@ function ThresholdLab({ evals }: { evals: Record<ModelName, ModelEval> }) {
             <div className="flex items-baseline justify-between"><span className="label">Threshold</span><span className="font-display text-5xl">{t.toFixed(2)}</span></div>
             <input type="range" className="range mt-3" min={0.01} max={0.99} step={0.01} value={t} onChange={(e) => setT(Number(e.target.value))} aria-label="Threshold" />
             <div className="mt-2 flex justify-between font-mono text-[10.5px] text-ink-3">
-              <button onClick={() => setT(rec)} className="text-violet hover:underline">recommended {rec.toFixed(2)}</button>
+              <button onClick={() => setT(rec)} className="text-primary hover:underline">recommended {rec.toFixed(2)}</button>
               <span>{[0.2, 0.3, 0.4, 0.5, 0.6].map((x) => <button key={x} onClick={() => setT(x)} className="ml-2 hover:text-ink">{x.toFixed(1)}</button>)}</span>
             </div>
           </div>
@@ -55,7 +56,7 @@ function ThresholdLab({ evals }: { evals: Record<ModelName, ModelEval> }) {
               <div className="grid grid-cols-3 gap-3">
                 <Stat label="Precision" value={ta.precision.toFixed(3)} />
                 <Stat label="Recall" value={ta.recall.toFixed(3)} />
-                <Stat label="F1" value={ta.f1.toFixed(3)} tone="rgb(var(--violet))" />
+                <Stat label="F1" value={ta.f1.toFixed(3)} tone="rgb(var(--primary))" />
               </div>
               <ConfusionMatrix m={ta.confusion_matrix} compact />
               <p className="text-[12px] leading-relaxed text-ink-3">
@@ -65,7 +66,7 @@ function ThresholdLab({ evals }: { evals: Record<ModelName, ModelEval> }) {
             </motion.div>
           )}
           <div className="flex gap-2 rounded border border-line/[0.1] bg-bg/40 p-3 text-[11.5px] leading-relaxed text-ink-3">
-            <Info size={14} className="mt-0.5 shrink-0 text-violet" />{evals[model].threshold_objective}
+            <Info size={14} className="mt-0.5 shrink-0 text-primary" />{evals[model].threshold_objective}
           </div>
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
@@ -79,9 +80,9 @@ function ThresholdLab({ evals }: { evals: Record<ModelName, ModelEval> }) {
                 <Tooltip content={<ChartTip fmt={(v) => v.toFixed(3)} labelFmt={(l) => `threshold ${l}`} />} />
                 <Legend iconType="plainline" />
                 <ReferenceLine x={t} stroke={c.ink2} strokeDasharray="3 3" />
-                <Line dataKey="Precision" stroke={c.cyan} dot={{ r: 2.5 }} strokeWidth={2} />
+                <Line dataKey="Precision" stroke={c.secondary} dot={{ r: 2.5 }} strokeWidth={2} />
                 <Line dataKey="Recall" stroke={c.coral} dot={{ r: 2.5 }} strokeWidth={2} />
-                <Line dataKey="F1" stroke={c.violet} dot={{ r: 2.5 }} strokeWidth={2.4} />
+                <Line dataKey="F1" stroke={c.primary} dot={{ r: 2.5 }} strokeWidth={2.4} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -101,11 +102,13 @@ function ThresholdLab({ evals }: { evals: Record<ModelName, ModelEval> }) {
           </div>
         </div>
       </div>
+      <Insight title="How to read the threshold trade-off">{thresholdInsight(evals[model], MODEL_LABELS[model])}</Insight>
     </Panel>
   );
 }
 
 function CurvePanel({ k, data, md, className }: { k: "pr_curve" | "roc_curve"; data: Record<string, number>[]; md: MetricsResp; className: string }) {
+  const prevalence = md.dataset.splits.test ? md.dataset.splits.test.fraud / md.dataset.splits.test.rows : 0.0017;
   const c = useChartColors();
   const pr = k === "pr_curve";
   return (
@@ -128,6 +131,7 @@ function CurvePanel({ k, data, md, className }: { k: "pr_curve" | "roc_curve"; d
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <Insight>{pr ? prInsight(md.models, prevalence) : rocInsight(md.models)}</Insight>
     </Panel>
   );
 }
@@ -149,11 +153,12 @@ function HistPanel({ md }: { md: MetricsResp }) {
             <YAxis scale="log" domain={[0.8, "auto"]} allowDataOverflow tickLine={false} axisLine={false} />
             <Tooltip content={<ChartTip labelFmt={(l) => `probability ≥ ${l}`} />} />
             <Legend />
-            <Bar dataKey="Legitimate" fill={c.cyan} radius={[2, 2, 0, 0]} />
+            <Bar dataKey="Legitimate" fill={c.secondary} radius={[2, 2, 0, 0]} />
             <Bar dataKey="Fraud" fill={c.coral} radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <Insight>{histInsight(md.models[m], MODEL_LABELS[m])}</Insight>
     </Panel>
   );
 }
@@ -200,9 +205,7 @@ export default function ModelLab() {
 
   return (
     <div>
-      <PageHeader index="03" kicker="Model Comparison Laboratory" title="Three models." accent="One evidence base."
-        intro={<>Every number on this page comes from the training run of {fmtDate(cd.generated_at)} on the real Kaggle data. Models are ranked by
-          <span className="text-ink"> validation</span> PR-AUC; the test split is used only for the final, untouched report.{cd.quick_mode && <span className="text-amber"> (Quick-mode run on subsampled data.)</span>}</>} />
+      <PageHeader index="03" kicker="Model Comparison Laboratory" title="Three models." accent="One evidence base." />
 
       {/* Ranking podium */}
       <div className="grid gap-5 lg:grid-cols-3">
@@ -210,18 +213,18 @@ export default function ModelLab() {
           const info = models.data?.models.find((m) => m.name === r.name);
           const isActive = settings?.active_model === r.name;
           return (
-            <Panel key={r.name} delay={i * 0.06} className={`p-5 ${r.rank === 1 ? "border-violet/40" : ""}`}>
-              {r.rank === 1 && <div className="pointer-events-none absolute inset-0 rounded-md bg-gradient-to-br from-violet/12 via-transparent to-cyan/5" />}
+            <Panel key={r.name} delay={i * 0.06} className={`p-5 ${r.rank === 1 ? "border-primary/40" : ""}`}>
+              {r.rank === 1 && <div className="pointer-events-none absolute inset-0 rounded-md bg-gradient-to-br from-primary/12 via-transparent to-secondary/5" />}
               <div className="relative">
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="kicker flex items-center gap-2">Rank {r.rank} {r.rank === 1 && <Crown size={12} className="text-violet" />}</div>
+                    <div className="kicker flex items-center gap-2">Rank {r.rank} {r.rank === 1 && <Crown size={12} className="text-primary" />}</div>
                     <h3 className="mt-1 font-display text-[34px] leading-none">{r.label}</h3>
                     <div className="mt-2 font-mono text-[11px] text-ink-3">strategy: {info?.strategy} · thr {info?.recommended_threshold.toFixed(2)}</div>
                   </div>
                   <div className="text-right">
                     <div className="label">val PR-AUC</div>
-                    <div className="num text-[22px] text-violet">{r.validation_pr_auc.toFixed(3)}</div>
+                    <div className="num text-[22px] text-primary">{r.validation_pr_auc.toFixed(3)}</div>
                   </div>
                 </div>
                 <div className="mt-5 grid grid-cols-4 gap-2 border-t border-line/[0.08] pt-4">
@@ -231,7 +234,7 @@ export default function ModelLab() {
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <span className="font-mono text-[10.5px] text-ink-3">test · ROC-AUC {r.test.roc_auc.toFixed(3)} · acc {r.test.accuracy.toFixed(4)}</span>
-                  <button className={isActive ? "chip border-violet/40 text-violet" : "btn-ghost px-2.5 py-1 text-[11.5px]"} disabled={isActive}
+                  <button className={isActive ? "chip border-primary/40 text-primary" : "btn-ghost px-2.5 py-1 text-[11.5px]"} disabled={isActive}
                     onClick={() => setActiveModel(r.name)}>{isActive ? "active" : "Make active"}</button>
                 </div>
               </div>
@@ -239,10 +242,10 @@ export default function ModelLab() {
           );
         })}
       </div>
-      <p className="mt-3 text-[12px] text-ink-3">Selection criterion: {cd.selection_criterion} Accuracy is shown for completeness only — with 0.17% fraud, a model that never flags anything is already 99.8% accurate.</p>
+      <p className="mt-3 font-mono text-[11px] text-ink-3">Ranked by validation PR-AUC · test results reported once · {fmtDate(cd.generated_at)}{cd.quick_mode && " · quick-mode run"}</p>
 
       {/* Metric comparison + curves */}
-      <div className="mt-5 grid gap-5 xl:grid-cols-12">
+      <div className="mt-5 grid gap-5 xl:grid-cols-12 xl:items-start">
         <Panel className="xl:col-span-5" delay={0.1}>
           <PanelHead kicker="Imbalance-aware metrics" title="Precision · Recall · F1 · PR-AUC">
             <Segmented size="sm" value={at} onChange={setAt} options={[{ value: "at_recommended", label: "Tuned thr" }, { value: "at_default", label: "@ 0.50" }]} />
@@ -259,6 +262,7 @@ export default function ModelLab() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <Insight>{metricsInsight(md.models, at)}</Insight>
         </Panel>
         <CurvePanel k="pr_curve" data={curve("pr_curve")} md={md} className="xl:col-span-7" />
         <CurvePanel k="roc_curve" data={curve("roc_curve")} md={md} className="xl:col-span-5" />
@@ -277,6 +281,7 @@ export default function ModelLab() {
             </div>
           ))}
         </div>
+        <Insight title="What these matrices tell you">{confusionInsight(md.models, at)}</Insight>
       </Panel>
 
       <div className="mt-5"><ThresholdLab evals={md.models} /></div>
@@ -292,13 +297,13 @@ export default function ModelLab() {
                 const best = Math.max(...cd.imbalance_experiments.filter((x) => x.model === e.model).map((x) => x.validation.pr_auc));
                 const chosen = e.validation.pr_auc === best;
                 return (
-                  <tr key={e.model + e.strategy} className={`table-row border-t border-line/[0.06] ${chosen ? "bg-violet/[0.06]" : ""}`}>
+                  <tr key={e.model + e.strategy} className={`table-row border-t border-line/[0.06] ${chosen ? "bg-primary/[0.06]" : ""}`}>
                     <td>{MODEL_LABELS[e.model]}</td>
-                    <td className="font-mono text-[12px]">{titleCase(e.strategy)} {chosen && <span className="chip ml-1 border-violet/40 text-violet">selected</span>}</td>
+                    <td className="font-mono text-[12px]">{titleCase(e.strategy)} {chosen && <span className="chip ml-1 border-primary/40 text-primary">selected</span>}</td>
                     {(["pr_auc", "roc_auc", "precision", "recall", "f1"] as const).map((k) => (
                       <td key={k} className="num">
                         <span className="relative inline-block min-w-[64px] px-1.5 py-0.5">
-                          <span className="absolute inset-0 rounded-xs bg-violet" style={{ opacity: e.validation[k] * 0.28 }} />
+                          <span className="absolute inset-0 rounded-xs bg-primary" style={{ opacity: e.validation[k] * 0.28 }} />
                           <span className="relative">{e.validation[k].toFixed(4)}</span>
                         </span>
                       </td>
@@ -309,8 +314,8 @@ export default function ModelLab() {
               })}
             </tbody>
           </table>
-          <p className="mt-3 text-[12px] leading-relaxed text-ink-3">SMOTE oversamples the minority class to {cd.settings.smote_sampling_strategy * 100}% of the majority — inside the training pipeline only. Validation and test data are never resampled. For each model the strategy with the best validation PR-AUC is kept.</p>
         </div>
+        <Insight title="What this experiment tells you">{imbalanceInsight(cd.imbalance_experiments)}</Insight>
       </Panel>
 
       {/* Hyperparameters */}

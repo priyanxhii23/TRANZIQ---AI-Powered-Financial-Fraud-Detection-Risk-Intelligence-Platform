@@ -1,7 +1,7 @@
 {
   "name": "tranziq-frontend",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "TRANZIQ - Intelligence Behind Every Transaction. React frontend.",
   "type": "module",
   "scripts": {
