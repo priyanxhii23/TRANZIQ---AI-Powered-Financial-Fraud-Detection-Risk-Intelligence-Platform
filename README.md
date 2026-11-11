@@ -383,20 +383,8 @@ Full reference with examples: [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION
 | ![XAI](docs/screenshots/06_xai_studio.jpg) 06 · XAI Studio | ![Scenario Lab](docs/screenshots/07_scenario_lab.jpg) 07 · Scenario Lab comparison |
 | ![Light](docs/screenshots/08_command_center_light.jpg) Light theme · Italian Roast / Dried Plum / Parchment | ![Reports](docs/screenshots/09_reports_light.jpg) 10 · Reports & PDF export |
 
-## 19. Limitations
 
-- **Anonymised features.** V1–V28 are PCA outputs; explanations can name a component but not its meaning.
-- **Old, small, European data.** Two days of September 2013; fraud patterns change over time (concept drift).
-- **Simulated data is illustrative.** Scenario Lab vectors are perturbed training records with no ground truth.
-  The lab shows that these models react mainly to the anonymised V-component patterns: inflating the amount or the
-  transaction rate alone barely changes their scores, so amount or velocity rules would need extra features.
-- **Replay timestamps.** Kaggle records only have a time offset, so they are placed on the timeline
-  relative to the date the database was seeded.
-- **Demo DB is fraud-enriched.** Dashboard rates don't reflect real-world prevalence.
-- **No authentication / single user.** Suitable for local demonstration only.
-- **No probability calibration.** Scores rank risk well but aren't calibrated "true" probabilities.
-
-## 20. Future improvements
+## 19. Future improvements
 
 - Hyper-parameter search (Optuna) with time-aware cross-validation.
 - Probability calibration (Platt / isotonic) and cost-sensitive threshold selection.
