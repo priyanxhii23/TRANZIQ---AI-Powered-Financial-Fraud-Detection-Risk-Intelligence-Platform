@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.3" r="0.6"><stop offset="0" stop-color="#7C5CFF" stop-opacity="0.35"/><stop offset="1" stop-color="#7C5CFF" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#94A3D1" stroke-opacity="0.06"/></pattern>
+  </defs>
+  <rect width="1280" height="320" fill="#070A14"/>
+  <rect width="1280" height="320" fill="url(#grid)"/>
+  <rect width="1280" height="320" fill="url(#glow)"/>
+  <g stroke="#7C5CFF" stroke-opacity="0.35">
+    <line x1="0" y1="72" x2="520" y2="72"/><line x1="760" y1="248" x2="1280" y2="248"/><line x1="900" y1="120" x2="1280" y2="120" stroke="#22D3EE" stroke-opacity="0.25"/>
+  </g>
+  <g transform="translate(96,96) scale(2)">
+    <path d="M44.5 41.8A17 17 0 1 1 49 32" fill="none" stroke="url(#g)" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M22 22L34 34l14 14" fill="none" stroke="url(#g)" stroke-width="4.2" stroke-linecap="round"/>
+    <circle cx="15" cy="32" r="3" fill="#7C5CFF"/><circle cx="32" cy="15" r="3" fill="#7C5CFF"/><circle cx="34" cy="34" r="4.2" fill="#22D3EE"/>
+  </g>
+  <text x="260" y="168" font-family="Manrope, Inter, Segoe UI, Arial, sans-serif" font-weight="800" font-size="72" letter-spacing="22" fill="#E8EAF3">TRANZ<tspan fill="url(#g)">IQ</tspan></text>
+  <text x="262" y="214" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="30" fill="#A3A9C2">Intelligence Behind Every Transaction.</text>
+  <text x="262" y="258" font-family="Consolas, 'JetBrains Mono', monospace" font-size="14" letter-spacing="3" fill="#68708F">AI-POWERED FRAUD DETECTION  ·  TRANSACTION RISK INTELLIGENCE</text>
+  <g font-family="Consolas, monospace" font-size="13" fill="#68708F">
+    <text x="1010" y="64">PR-AUC 0.834</text><text x="1010" y="86" fill="#22D3EE">PRECISION 0.986</text><text x="1010" y="108" fill="#FF5C6C">● LIVE</text>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---- Node / frontend ----
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# ---- Data & generated artifacts (regenerate locally) ----
+data/raw/*.csv
+data/raw/*.part
+data/*.db
+data/*.db-*
+artifacts/models/
+artifacts/reports/
+artifacts/plots/
+artifacts/splits.joblib
+backups/
+*.zip
+
+# ---- Environment / secrets ----
+.env
+.env.local
+
+# ---- Editors / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
