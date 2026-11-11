@@ -54,10 +54,20 @@ PUT {"active_model":"random_forest",
 All fields are optional. Bands must satisfy `0 < medium < high < critical < 1` (else 422). `null`
 restores the validation-recommended threshold.
 
-### `GET /api/risk/levels` · `POST /api/risk/assess` · `POST /api/risk/reclassify`
+### `GET /api/risk/levels` · `POST /api/risk/assess`
 - `levels`: the four bands, their ranges, recommended actions and the current count per level.
 - `assess` `{"probability":0.42}` returns the level, range and plain-English explanation.
-- `reclassify` re-applies the saved bands to every stored prediction and returns `{"updated_predictions": n}`.
+
+### `POST /api/risk/reapply`
+Validates and saves new bands, then re-classifies **every stored prediction** in the database with one set-based SQL
+`UPDATE … CASE`. Alert severities are synced to their prediction's new level; analyst statuses are never touched.
+```json
+POST {"bands": {"medium": 0.2, "high": 0.45, "critical": 0.85}}     // omit "bands" to re-apply the saved ones
+200  {"bands": {...}, "updated_predictions": 14, "updated_alert_severities": 0, "total_predictions": 13185,
+      "distribution_before": {"low": 12947, "medium": 14, "high": 30, "critical": 194},
+      "distribution_after":  {"low": 12944, "medium": 14, "high": 41, "critical": 186}}
+```
+Mis-ordered bands return **422** and nothing is saved. (`POST /api/risk/reclassify` is kept as a backwards-compatible alias.)
 
 ### `GET /api/monitoring`
 Active model, last training run, per-model version / prediction count / last prediction time / flagged
@@ -168,6 +178,24 @@ The whole file is rejected (422) if columns are missing, it's empty, or it has m
 
 ---
 
+## Fraud Scenario Lab
+
+### `GET /api/scenarios/catalog`
+The five scenarios (`unusual_spending`, `rapid_activity`, `fraud_patterns`, `legit_patterns`, `custom`) with their documented
+perturbation method.
+
+### `POST /api/scenarios/run`
+```json
+{"scenario": "rapid_activity", "count": 40, "intensity": 0.5, "amount": null, "interval_seconds": 30,
+ "base_profile": "legit", "base_transaction_id": 12, "model": "xgboost", "threshold": null, "seed": 7, "persist": false}
+```
+Returns real predictions for every generated vector (`items[]` with amount, time, probability, label, risk level), a
+`summary` (mean/max probability, predicted fraud, risk distribution), the `reference_probability` of the unperturbed base
+record(s), and a data-integrity `note`. With `persist: true` the vectors are stored as simulated transactions
+(`source=synthetic`, `generation_profile=scenario:<name>`, no label). Scenario data is never used for training.
+
+---
+
 ## Synthetic data
 
 ### `POST /api/synthetic/generate`
@@ -213,4 +241,6 @@ records an **analyst decision**; it doesn't change ground truth or retrain anyth
 | `GET /api/reports/transactions.csv?model=&source=&risk_level=&predicted_label=&q=&min_prob=&include_features=` | Streamed CSV with metadata, label, model, probability, threshold, prediction and risk (+ optional 30 features) |
 | `GET /api/reports/alerts.csv` | All alerts with status and notes |
 | `GET /api/reports/evaluation?format=md\|csv\|json` | Evaluation report built from the real training results |
+| `GET /api/reports/pdf` | Branded 5-page A4 PDF: executive summary, model performance (validation + test), evaluation charts, imbalance & methodology, risk analysis & conclusion. Page numbers "Page X of Y". |
+| `GET /api/predict/template.csv?samples=0..50` | Empty CSV template, or a sample file of real held-out records (half fraud-labelled) with a `Class` column the scanner ignores |
 | `GET /static/plots/{file}.png` | EDA and SHAP figures written during training |

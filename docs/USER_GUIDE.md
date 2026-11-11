@@ -14,14 +14,30 @@ Once `run_project.bat` is running, open <http://localhost:5173>.
 | **Risk level** | Low / Medium / High / Critical: probability bands that set how urgently to act |
 | **Ground truth** | The real label. Only real Kaggle rows have one. Synthetic and user rows don't. |
 
-Source tags appear everywhere: `REAL` = Kaggle record (held-out test data), `SYNTH` = generated demo
-record, `USER` = something you entered or uploaded.
+Records without a verified label (simulated or user-submitted) show **N/A** as their known label. The record's
+origin is kept for auditing and shown in small type in the Explorer detail panel.
+
+## The welcome story
+
+The first time you open TRANZIQ in a browser session, **The Journey of a Transaction** plays:
+
+1. **Everyday banking**: a customer withdraws cash at an ATM.
+2. **Transactions begin**: café, boutique, online order, a flight abroad. The account ledger updates.
+3. **The unexpected problem**: at 03:14 an unknown device makes a €2,450 payment. *Click the coral transaction.*
+4. **TRANZIQ intervenes**: every payment flows into the engine
+   (Transaction → ML analysis → Risk detection → Fraud alert → Analyst review) and the unusual one is held.
+5. **Welcome to TRANZIQ**: hover the signals in the *intelligence orbit* (real stored transactions) and click the warm
+   ones to find all the suspicious signals. That's optional; press **ENTER TRANZIQ** any time.
+
+Controls: **Pause/Play**, **Next**, the progress bars, ← / → keys, **Skip story** or Esc. If your system asks for reduced
+motion, you go straight to the welcome screen. Replay it later with **Replay intro** in the page footer.
 
 ## Navigation
 
 The **left rail** lists the ten areas, numbered 01–10. At the bottom:
 - **Active model**: choose which model drives dashboards and new alerts (`best` marks the winner from training).
-- **API status** dot and the **theme toggle** (☀/☾). Your theme choice is remembered.
+- **API status** dot and the **theme switch**: dark *Flashlight / Aubergine / Sandy Brown* or light *Italian Roast /
+  Dried Plum / Parchment*. The page changes with a circular reveal, and your choice is remembered.
 
 The **live feed** across the top shows the most recently stored transactions with their fraud
 probability (▲ = flagged). Hover to pause it. When new alerts appear, a **floating notification** pops up
@@ -39,21 +55,35 @@ The **ledger** lists totals. Below it you'll find the 24-hour **activity timelin
 check" box compares predictions with known labels on the stored Kaggle records.
 
 ## 02 · Fraud Scanner
-**Single transaction**
-1. Click **Real fraud sample** or **Real legit sample** to load a genuine held-out Kaggle record (its
-   known label is shown), or type all 30 values yourself.
-2. Choose a **model** and optionally drag the **threshold** (click *reset* to return to the recommended value).
-3. Leave **Save as a user transaction** on if you want it stored (it can raise an alert).
-4. Press **Run fraud scan**. You get a risk gauge, a verdict, a plain-English explanation and the top
-   **SHAP** reasons. For loaded samples TRANZIQ also tells you whether the model was right.
+The model needs **all 30 features** (Time, V1–V28, Amount). Amount and Time alone are not enough for a valid
+prediction, so the scanner always works from a complete feature vector.
 
-Invalid fields are outlined in red and the scan won't run until they're fixed.
+**Quick scan** (default)
+1. **Start from a historical transaction**: *Fraud sample*, *Legitimate sample*, *Random sample*, or pick one from the
+   list. A badge shows whether it is a fraud-labelled or legitimate-labelled historical record.
+2. **Transaction details**: change the **Amount** or **Transaction time** if you like. The 28 anonymised components
+   stay attached. If you edit them, the badge warns that the record's known label no longer applies. *Transaction type*
+   is saved with the record but is **not** a model input.
+3. **Model & threshold**: choose a model and, optionally, a custom threshold.
+4. Press **SCAN TRANSACTION**. The button stays locked until a complete vector is loaded.
 
-**Batch CSV**: click **Template** to download a correctly formatted file (it contains real test rows),
-then drop your CSV, choose model/threshold and press **Run batch prediction**. Invalid rows are
-skipped and listed by line number. **Export** saves the results.
+Every **(i)** icon explains its field.
+
+**Advanced features**: all 30 inputs, with V1–V28 in a collapsible panel; *Fill from an example transaction*, a
+**Template** and a **Sample file** download, and validation of every field.
+
+**Result**: animated risk gauge, predicted class, fraud probability, risk category, model, decision threshold, a plain
+explanation, the recommended next action and the strongest SHAP reasons. For an unedited sample it also says whether
+the model was right.
+
+**Batch CSV**: download the **Template** or **Sample file**, drop your CSV, choose model/threshold and press **Run batch
+prediction**. Invalid rows are listed by line; **Download predictions** saves the results.
 
 ## 03 · Model Lab
+Every important chart has a **"What this chart tells you"** panel underneath. The text is generated from the stored
+results: which model leads each metric, how well the classes separate, how errors move with the threshold, and what
+the imbalance experiment actually found.
+
 - **Ranking cards**: the three models ordered by validation PR-AUC, with test metrics. *Make active* switches the active model.
 - **Metric bars**: compare Precision, Recall, F1 and PR-AUC at the tuned threshold or at 0.50.
 - **PR and ROC curves**, **score separation** histogram, **confusion matrices**.
@@ -63,34 +93,52 @@ skipped and listed by line number. **Export** saves the results.
   *selected* was kept.
 
 ## 04 · Explorer
-Search by ID, customer, merchant or place, and filter by source, model, risk level, prediction, known
-label, amount, probability range and dates. Click a column heading to sort. Click a row to open the
-**detail panel**: metadata, every model's prediction, alerts, the 30 input features, **Re-score**, and
-**Explain this prediction**. **Export CSV** downloads the current filter.
+One unified list of every stored transaction. Search by ID, customer, merchant or place, and filter by model, risk level,
+prediction, known label, amount, probability range and dates. Click a column heading to sort. Click a row to open the
+**detail panel** (metadata, every model's prediction, alerts, the 30 inputs, **Re-score**, **Explain this
+prediction**). **Export CSV** downloads the current filter.
 
-## 05 · Risk Engine
-- **Band editor**: drag the starting points of Medium, High and Critical, then **Save bands**. The black
-  marker shows the active model's decision threshold.
-- **Re-apply to stored data** updates the risk level of every stored prediction under the new bands.
-- **Simulator**: slide a probability to see how it would be classified and why.
-- **Decision thresholds**: override per model (leave empty to use the recommended value).
+## 05 · Risk Decision Center
+Two different questions:
+- **Risk band**: *how high* is the estimated fraud probability? It sets urgency (Low / Medium / High / Critical).
+- **Decision threshold**: *does* the model classify the transaction as fraud? It is chosen per model on validation data.
+
+A transaction can be **High risk yet predicted legitimate** when its probability is below the model's threshold. The
+*Two different questions* panel shows both on one scale and explains the current case in a sentence.
+
+- **Simulator**: drag a probability; see the gauge, band, threshold, predicted class and recommended analyst action.
+- **Risk cards**: click one to open the Explorer filtered to that band.
+- **Band editor**: sliders or numbers for where Medium, High and Critical start, plus **Revert** and **Save bands**.
+- **Re-apply to stored data**: after a confirmation, saves the bands and re-classifies *every* stored prediction in the
+  database. The dashboard, alert counts and cards refresh, and a summary shows the before/after distribution.
+- **Decision thresholds**: override per model (leave empty for the recommended value).
+
+Recommendations are decision support, never automatic approvals or rejections.
 
 ## 06 · XAI Studio
 Choose a model at the top.
-- **Global importance**: which features matter most on average. Toggle **SHAP plot** to see the
-  official SHAP summary image.
-- **Beeswarm**: each dot is one transaction. Left of zero pushes towards *legitimate*, right pushes
-  towards *fraud*. Colour shows the feature's value (cyan = low, coral = high).
-- **Individual prediction**: pick a high-risk transaction or type its ID to get a **waterfall**
-  running from the base value through each contribution to the final output.
+- **Global importance**: which features matter most on average. **SHAP plot** shows the official summary image.
+- **Beeswarm**: each dot is one transaction. Right of zero pushes towards fraud, left towards legitimate; colour is the
+  feature's value (low → high).
+- **Choose a transaction**: the list fills itself (*Highest risk*, *Latest flagged*, *Recent*), with search and an
+  optional ID lookup. The top transaction is selected automatically. The **waterfall** shows the path from the base
+  value through each contribution to the final output.
 
-> V1–V28 are anonymised. TRANZIQ tells you *which* component mattered, never what it "means".
+V1–V28 are anonymised: TRANZIQ tells you *which* component mattered, never what it means (hover the (i)).
 
-## 07 · Generator
-Pick a volume (10–1,000), the **fraud-pattern seed share**, **noise** and **date spread**, optionally a
-**seed** for repeatable batches, then **Generate & score**. Results show predictions and risk levels.
-**Save batch CSV** exports them. **Reset synthetic data** (with confirmation) removes every synthetic
-record; real data stays.
+## 07 · Scenario Lab
+Stress-test the models with simulated transactions:
+**Unusual spending**, **Rapid activity**, **Fraud-like patterns**, **Legitimate patterns** or a **Custom** scenario.
+Set the volume, perturbation intensity, amount, time interval, base record, model and seed, then **Run scenario**.
+
+- The result shows the count, average and highest probability, predicted fraud, low-risk count, a scatter of every
+  transaction, the risk distribution and how the scores moved from the unperturbed base.
+- **Threshold experiment**: drag the slider and watch predictions change for the same scenario.
+- **Compare scenarios**: select up to three runs, or press *Compare legitimate vs fraud-like patterns*.
+- **Save to the transaction database** stores the run as simulated records (no labels). **Reset simulated data**
+  removes them; historical data is untouched.
+
+Scenario records are never used to train or evaluate the models.
 
 ## 08 · Alert Center
 Status tiles at the top filter the queue. Pick an alert to investigate: check the risk gauge and
@@ -106,7 +154,9 @@ class balance, amount and time distributions, the strongest correlations with fr
 interactive **correlation heatmap** (hover a cell).
 
 ## 10 · Reports
-Health checks, model versions and prediction activity, dataset facts, and downloads:
+**DOWNLOAD PDF REPORT** generates a branded 5-page A4 report: executive summary, model performance (validation and
+test), evaluation charts, imbalance and methodology, risk analysis and conclusion. Also here: health checks, model
+versions and prediction activity, dataset facts, and these downloads:
 - **Transaction export (CSV)**: choose model/source, optionally include the 30 features.
 - **Model evaluation report**: Markdown, CSV or JSON.
 - **Alert log (CSV)**.

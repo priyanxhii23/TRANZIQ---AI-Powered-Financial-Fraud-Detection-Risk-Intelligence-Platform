@@ -8,11 +8,11 @@
 </p>
 
 <p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.11--3.13-7C5CFF">
-  <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-22D3EE">
-  <img alt="React" src="https://img.shields.io/badge/UI-React%20%2B%20TypeScript-7C5CFF">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-67%20passing-34D399">
-  <img alt="Local" src="https://img.shields.io/badge/runs-100%25%20locally-22D3EE">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11--3.13-B76CDE">
+  <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-D4A373">
+  <img alt="React" src="https://img.shields.io/badge/UI-React%20%2B%20TypeScript-6D405D">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-83%20passing-7FCF9F">
+  <img alt="Local" src="https://img.shields.io/badge/runs-100%25%20locally-A77F92">
 </p>
 
 ---
@@ -25,7 +25,25 @@ them honestly, explains every prediction with SHAP and puts everything in an int
 web application: a monitoring command center, a fraud scanner, a model laboratory, an investigation
 workflow and more.
 
+It opens with **"The Journey of a Transaction"**, an interactive, illustrated story that shows how fraud happens
+and how TRANZIQ intervenes, and then moves into the monitoring platform.
+
 Everything runs on your laptop: no cloud services, no paid APIs, no API keys.
+
+### What's new in V2
+- **Welcome experience**: a five-scene interactive story (bank → payments → fraud → TRANZIQ intervenes → welcome) with an
+  "intelligence orbit" built from your real stored transactions.
+- **Beginner-friendly scanner**: Quick Scan starts from a genuine labelled record (all 30 features), Advanced Scan
+  shows the anonymised components in a collapsible panel, and CSV templates and sample files are included.
+- **Chart interpretations** under every Model Lab graph, generated from the stored experiment metrics.
+- **Unified Explorer**: one transaction list; the record origin is kept for auditing but out of the way.
+- **Transaction Risk Decision Center**: separates "risk band" from "decision threshold", with clickable risk cards and a
+  working **bulk re-apply** (one set-based SQL update; it also syncs alert severities).
+- **XAI Studio**: auto-populated transaction lists, so you no longer type IDs.
+- **Fraud Scenario Lab**: stress-tests the models with five scenarios, live threshold experiments and run comparison.
+- **Branded 5-page PDF report** (ReportLab).
+- **Two art-directed themes**: *Flashlight / Aubergine / Sandy Brown / Space Cadet* (dark) and
+  *Italian Roast / Dried Plum / Parchment* (light), plus an ambient animated background and a circular-reveal theme switch.
 
 > This is an educational portfolio project. Predictions are model outputs, not financial decisions.
 
@@ -78,7 +96,7 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Backend | Python, FastAPI, Pydantic, SQLAlchemy 2 |
 | Machine learning | pandas, NumPy, scikit-learn, XGBoost, imbalanced-learn (SMOTE), SHAP, Joblib |
 | Database | SQLite |
-| Static figures | Matplotlib, Seaborn |
+| Static figures & reports | Matplotlib, Seaborn, ReportLab (PDF) |
 | Testing | pytest, FastAPI TestClient, Playwright (UI smoke checks during development) |
 
 ## 6. Dataset source
@@ -178,42 +196,43 @@ reports it rather than forcing SMOTE to "win".
 
 | # | Feature | What you can do |
 |---|---|---|
-| 01 | **Intelligence Command Center** | Live totals, predicted fraud rate, risk-distribution core, 24h activity timeline, recent alerts, animated stream, active-model performance |
-| 02 | **Transaction Fraud Scanner** | Enter the 30 features or load a real held-out record, pick model and threshold, get probability, risk level, verdict and SHAP reasons. Batch CSV upload with row-level validation. |
-| 03 | **Model Comparison Laboratory** | Rankings, metric bars, PR & ROC curves, confusion matrices, score separation, interactive threshold lab, imbalance experiment, hyper-parameters |
-| 04 | **Transaction Intelligence Explorer** | Search, sort, paginate; filter by source, model, risk, prediction, label, amount, probability, date; detail drawer; CSV export |
-| 05 | **Risk Assessment Engine** | Configure Low / Medium / High / Critical bands, simulate, re-apply to stored data, per-model threshold overrides |
-| 06 | **Explainable AI Studio** | Global importance, SHAP beeswarm, official SHAP plot, per-transaction waterfall, positive/negative drivers |
-| 07 | **Synthetic Transaction Generator** | 10–1,000 records, seed-profile mix, noise, date range, save or preview, export, reset |
+| — | **Welcome story** | 5 scenes: everyday banking → payments → an unauthorised transaction → TRANZIQ intercepts it → *Welcome to TRANZIQ*. Auto-plays; pause/skip/arrow keys; find the suspicious signals in the orbit (optional). Reduced-motion users go straight to the welcome screen. |
+| 01 | **Intelligence Command Center** | Live totals, predicted fraud rate, risk-distribution core, 24h activity timeline, recent alerts, monitoring stream, active-model performance |
+| 02 | **Transaction Fraud Scanner** | **Quick Scan** from a real labelled sample (edit Amount/Time; the 28 components are kept), **Advanced Scan** with all 30 features, **Batch CSV** with template, sample file and downloadable predictions. Results: class, probability, risk, threshold, explanation, SHAP, next action. |
+| 03 | **Model Comparison Laboratory** | Rankings, metric bars, PR & ROC curves, score separation, confusion matrices, threshold lab, imbalance experiment, hyper-parameters, each with a *"What this chart tells you"* panel generated from real results |
+| 04 | **Transaction Intelligence Explorer** | One unified list; search, sort, paginate; filter by risk, prediction, known label, amount, probability, date, model; detail drawer; CSV export |
+| 05 | **Transaction Risk Decision Center** | Simulator (gauge + band + threshold + class + action), "risk band vs decision threshold" explainer, clickable risk cards → Explorer, band editor with sliders + numeric inputs, **save & re-apply to stored data**, per-model thresholds |
+| 06 | **Explainable AI Studio** | Global importance, SHAP beeswarm, official SHAP plot, auto-populated lists (highest risk / latest flagged / recent), waterfall, positive/negative drivers |
+| 07 | **Fraud Scenario Lab** | Unusual spending · rapid activity · fraud-like patterns · legitimate patterns · custom. Real predictions, threshold experiment, run comparison, optional persistence as simulated data |
 | 08 | **Fraud Alert & Investigation Center** | Severity queue, Pending → Investigating → Confirmed / Dismissed, analyst notes, persisted in SQLite |
-| 09 | **Fraud Trends & Analytics** | Volume by source, fraud trend, probability distribution, amount analysis, hourly radar, weekday pattern, real-vs-synthetic, plus EDA of the real dataset (incl. correlation heatmap) |
-| 10 | **Reports & Model Monitoring** | Health checks, model versions, training timestamp, prediction counts, dataset info, CSV / Markdown / JSON downloads |
+| 09 | **Fraud Trends & Analytics** | Volume, fraud trend, probability distribution, amount analysis, hourly radar, weekday pattern, real-vs-simulated comparison, plus EDA of the real dataset |
+| 10 | **Reports & Model Monitoring** | **DOWNLOAD PDF REPORT**, CSV / Markdown / JSON exports, health checks, model versions, prediction counts, dataset info |
 
-**Data honesty rules built into the UI:** real Kaggle rows are tagged `REAL`, generated ones `SYNTH`,
-user input `USER`. Only Kaggle rows have a ground-truth label. Synthetic records never have one, and
-alert statuses are stored as analyst decisions, never as labels.
+**Data honesty rules:** every record keeps its origin (`kaggle` / `synthetic` / `user`) in the database for auditing.
+Only historical Kaggle rows have a verified label; simulated and user records show **N/A**. Scenario data is never used
+for training or evaluation, and alert statuses are stored as analyst decisions, never as labels.
 
 ## 14. Project structure
 
 ```
 tranziq/
 ├── backend/
-│   ├── ml/                  # dataset loader, EDA, preprocessing, models, evaluation, SHAP, synthetic, train
+│   ├── ml/                  # dataset loader, EDA, preprocessing, models, evaluation, SHAP, synthetic, scenarios, train
 │   ├── app/
 │   │   ├── main.py          # FastAPI app, CORS, startup (load models, seed DB)
 │   │   ├── config.py        # settings from .env
 │   │   ├── database.py      # SQLAlchemy engine/session
 │   │   ├── models.py        # ORM tables
 │   │   ├── schemas.py       # Pydantic request validation
-│   │   ├── services/        # prediction, risk, alerts, analytics, seeding, settings, model registry
-│   │   └── api/             # routers: system, dashboard, transactions, predict, models, synthetic, alerts, explain, reports
+│   │   ├── services/        # prediction, risk, alerts, analytics, seeding, settings, model registry, pdf_report
+│   │   └── api/             # routers: system, dashboard, transactions, predict, models, scenarios, synthetic, alerts, explain, reports
 │   ├── scripts/             # download_dataset, train_models, seed_database, make_backup
-│   └── tests/               # 67 pytest tests
+│   └── tests/               # 83 pytest tests
 ├── frontend/
 │   └── src/
-│       ├── components/      # brand, layout, UI kit, visualisations (risk meter, risk core, SHAP bars…)
-│       ├── lib/             # API client, types, hooks, theme context, formatting
-│       └── pages/           # the 10 feature pages
+│       ├── components/      # brand, layout, ambient background, theme switch, UI kit, visualisations
+│       ├── lib/             # API client, types, hooks, theme context, chart insights, formatting
+│       └── pages/           # Welcome story + the 10 feature pages
 ├── docs/                    # ARCHITECTURE, ML_METHODOLOGY, API_DOCUMENTATION, USER_GUIDE, screenshots
 ├── data/raw/                # put creditcard.csv here (git-ignored)
 ├── artifacts/               # generated by training (git-ignored)
@@ -226,7 +245,8 @@ tranziq/
 **Prerequisites:** [Python 3.11–3.13](https://www.python.org/downloads/) (tick *Add to PATH*),
 [Node.js 18+](https://nodejs.org/), [Git](https://git-scm.com/), VS Code.
 
-**Option A: one click.** Double-click `setup_project.bat`. It creates `.venv`, installs Python and npm
+**Option A: one click.** Double-click `setup_project.bat`, or in the VS Code PowerShell terminal type
+`.\setup_project.bat` (PowerShell needs the `.\` prefix to run a script from the current folder). It creates `.venv`, installs Python and npm
 packages, downloads the dataset and trains the models (~3–10 minutes).
 
 **Option B: step by step.** Run these in the VS Code terminal (PowerShell or Command Prompt), from the
@@ -276,7 +296,7 @@ Use `--quick` for a ~30-second smoke run on 10% of the legitimate rows.
 
 ## 16. Running
 
-**One click:** double-click `run_project.bat`. It opens two windows (API and web) and your browser at
+**One click:** double-click `run_project.bat` (or type `.\run_project.bat` in PowerShell). It opens two windows (API and web) and your browser at
 <http://localhost:5173>.
 
 **Manually, in two VS Code terminals.** Terminal 1 starts the API. Go into the backend folder:
@@ -346,6 +366,10 @@ python backend\scripts\make_backup.py
 | GET | `/api/explain/{transaction_id}` · `/api/explain/global` | SHAP explanations |
 | GET / PUT | `/api/settings` · `/api/risk/levels` | Active model, risk bands, thresholds |
 | GET | `/api/reports/transactions.csv` · `/api/reports/evaluation` | Exports |
+| GET | `/api/reports/pdf` | Branded 5-page PDF report |
+| POST | `/api/risk/reapply` | Validate + save bands and re-classify every stored prediction |
+| GET / POST | `/api/scenarios/catalog` · `/api/scenarios/run` | Fraud Scenario Lab |
+| GET | `/api/predict/template.csv?samples=n` | CSV template / sample file for the scanner |
 
 Full reference with examples: [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md).
 
@@ -353,17 +377,19 @@ Full reference with examples: [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION
 
 | | |
 |---|---|
-| ![Boot](docs/screenshots/00_loading.jpg) Branded boot sequence | ![Command Center](docs/screenshots/01_command_center.jpg) 01 · Command Center |
-| ![Scanner](docs/screenshots/02_scanner.jpg) 02 · Fraud Scanner (real held-out fraud record) | ![Model Lab](docs/screenshots/03_model_lab.jpg) 03 · Model Lab |
-| ![Explorer](docs/screenshots/04_explorer_light.jpg) 04 · Explorer detail (light mode) | ![XAI](docs/screenshots/06_xai_studio.jpg) 06 · XAI Studio |
-| ![Alerts](docs/screenshots/08_alert_center.jpg) 08 · Alert Center | ![Trends](docs/screenshots/09_trends_light.jpg) 09 · Trends (light mode) |
+| ![Story](docs/screenshots/00_story_intervenes.jpg) The Journey of a Transaction · scene 4 | ![Welcome](docs/screenshots/01_welcome.jpg) Welcome + intelligence orbit (live data) |
+| ![Command Center](docs/screenshots/02_command_center.jpg) 01 · Command Center (dark) | ![Scanner](docs/screenshots/03_scanner.jpg) 02 · Quick Scan of a real fraud-labelled record |
+| ![Model Lab](docs/screenshots/04_model_lab.jpg) 03 · Model Lab with generated interpretation | ![Risk](docs/screenshots/05_risk_center.jpg) 05 · Risk Decision Center |
+| ![XAI](docs/screenshots/06_xai_studio.jpg) 06 · XAI Studio | ![Scenario Lab](docs/screenshots/07_scenario_lab.jpg) 07 · Scenario Lab comparison |
+| ![Light](docs/screenshots/08_command_center_light.jpg) Light theme · Italian Roast / Dried Plum / Parchment | ![Reports](docs/screenshots/09_reports_light.jpg) 10 · Reports & PDF export |
 
 ## 19. Limitations
 
 - **Anonymised features.** V1–V28 are PCA outputs; explanations can name a component but not its meaning.
 - **Old, small, European data.** Two days of September 2013; fraud patterns change over time (concept drift).
-- **Synthetic data is illustrative.** Perturbed training records with random metadata. It's useful for
-  demos and has no ground truth.
+- **Simulated data is illustrative.** Scenario Lab vectors are perturbed training records with no ground truth.
+  The lab shows that these models react mainly to the anonymised V-component patterns: inflating the amount or the
+  transaction rate alone barely changes their scores, so amount or velocity rules would need extra features.
 - **Replay timestamps.** Kaggle records only have a time offset, so they are placed on the timeline
   relative to the date the database was seeded.
 - **Demo DB is fraud-enriched.** Dashboard rates don't reflect real-world prevalence.

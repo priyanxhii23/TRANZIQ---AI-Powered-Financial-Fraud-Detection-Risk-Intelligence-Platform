@@ -169,7 +169,29 @@ Synthetic records exist to demonstrate the monitoring workflow, never to train o
 Synthetic records have **no ground-truth label**. `generation_profile` records only which kind of seed
 was perturbed.
 
-## 11. Reproducibility checklist
+## 11. Fraud Scenario Lab (model stress testing)
+
+The Scenario Lab probes how the trained models react to controlled changes. Every scenario builds complete
+30-feature vectors from **real training records** with a documented perturbation:
+
+| Scenario | Perturbation |
+|---|---|
+| Unusual spending | One base record; Amount × U(1, 1 + 49·intensity); V1–V28 get only 2% std noise |
+| Rapid activity | One base record repeated with Time = base + i × interval; V noise 10%·intensity std; Amount ±20% |
+| Fraud-like patterns | Random fraud-labelled training seeds + Gaussian noise (0.6·intensity × feature std) |
+| Legitimate patterns | Random legitimate training seeds + the same noise |
+| Custom | Chosen profile, optional fixed amount, count, intensity and time interval |
+
+**What it reveals.** Fraud-like vectors keep high scores under moderate noise (e.g. mean ≈ 0.82 vs 0.96 for the unperturbed
+seeds with XGBoost at intensity 0.4), while legitimate patterns stay near zero. Inflating only the **amount** or firing a
+**rapid burst** barely changes the scores. These models learned mainly from the anonymised V-component patterns, not from
+amount or velocity. That's a genuine limitation worth stating in an interview: velocity and amount rules would need
+engineered features (per-card history), which this anonymised dataset doesn't provide.
+
+Generated rows carry **no label**, are stored only on request (`source=synthetic`), and are never used for training or
+evaluation.
+
+## 12. Reproducibility checklist
 
 - Seed `42` for splits, SMOTE, models, SHAP sampling and pools.
 - Pinned dependency versions in `requirements.txt`.

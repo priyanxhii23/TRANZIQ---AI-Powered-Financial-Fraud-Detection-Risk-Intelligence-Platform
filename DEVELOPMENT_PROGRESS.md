@@ -1,54 +1,64 @@
 # TRANZIQ: Development Progress
 
-_Last updated: 2026-11-11_
+_Last updated: 2026-11-11 · Version 2.0_
 
-## Status: ✅ Feature-complete v1.0
+## Status: ✅ V2 product redesign complete
 
-| Phase | Status | Notes |
+### V1 (foundation): complete
+ML pipeline on the real Kaggle data (3 models × 3 imbalance strategies, validation-based thresholds and selection,
+SHAP), FastAPI + SQLite backend, React frontend with 10 features, docs, Windows scripts.
+
+### V2 (product redesign): complete
+| Phase | Status | Key files |
 |---|---|---|
-| 1. Planning & structure | ✅ | Monorepo: `backend/ml`, `backend/app`, `frontend`, `docs` |
-| 2. Dataset & ML | ✅ | Real Kaggle data (284,807 rows); 9 experiments; models trained and evaluated; SHAP; EDA |
-| 3. Backend | ✅ | FastAPI, SQLite (5 tables), service layer, 35+ endpoints |
-| 4. Frontend | ✅ | 10 feature pages, brand identity, dark/light, Framer Motion, responsive |
-| 5. Integration | ✅ | Vite proxy → API; all pages verified in Chromium with zero console errors |
-| 6. Testing | ✅ | 67 pytest tests passing; scripted browser walkthrough of the main workflows |
-| 7. Delivery | ✅ | README, 4 docs, `.bat` scripts, VS Code tasks, backup script, .gitignore |
+| 1. Welcome story | ✅ | `frontend/src/pages/Welcome.tsx`, `App.tsx` (once per session, "Replay intro" in footer) |
+| 2. Scanner redesign | ✅ | `pages/Scanner.tsx` (Quick / Advanced / Batch), `GET /api/predict/template.csv` |
+| 3. Model Lab interpretations | ✅ | `lib/insights.tsx`, `components/ui.tsx` (`Insight`) |
+| 4. Unified Explorer | ✅ | `pages/Explorer.tsx` (source filter/column/badges removed; origin kept in the drawer) |
+| 5. Risk Decision Center + re-apply fix | ✅ | `pages/RiskEngine.tsx`, `POST /api/risk/reapply` |
+| 6. XAI improvements | ✅ | `pages/Explain.tsx` (banner removed, auto lists, auto-select) |
+| 7. Fraud Scenario Lab | ✅ | `backend/ml/scenarios.py`, `app/api/scenarios_api.py`, `pages/ScenarioLab.tsx` |
+| 8. PDF report | ✅ | `app/services/pdf_report.py`, `GET /api/reports/pdf`, Reports page button |
+| 9. Themes + animation | ✅ | `styles/index.css` tokens, `components/Ambient.tsx`, `components/ThemeSwitch.tsx` |
+| 10. Integration & testing | ✅ | 83 pytest tests; scripted browser walkthrough (see below) |
 
-## Completed components
-- **ML** (`backend/ml`): loader + validation + cleaning, stratified 60/20/20 split, leak-free pipelines,
-  none / class_weight / SMOTE, LR / RF / XGBoost, F1-optimal validation thresholds, validation-based
-  ranking, test evaluation, global SHAP + summary plots, EDA JSON + PNGs, synthetic engine.
-- **API** (`backend/app`): health, dataset, settings, risk, monitoring, dashboard, analytics,
-  transactions, predict (single / batch / CSV upload), models, synthetic, alerts, explain, reports.
-- **UI** (`frontend/src/pages`): CommandCenter, Scanner, ModelLab, Explorer, RiskEngine, Explain,
-  Synthetic, Alerts, Analytics, Reports, NotFound, plus loading screen, ticker and toast alerts.
+### Root cause of the old "Re-apply" bug
+The button was `disabled={reapplying || dirty}`: as soon as the bands were edited (the normal flow) it could not be
+clicked, and the endpoint only used the *previously saved* bands, ignored alert severities and updated rows one by one.
+Fix: one endpoint validates → saves → bulk `UPDATE … CASE` → syncs alert severity; the UI asks for confirmation, then
+refreshes the dashboard, alerts and risk cards and shows a before/after summary.
 
-## Verified results (seed 42, full dataset)
-XGBoost (best): test PR-AUC 0.834, precision 0.986, recall 0.726, F1 0.836 (threshold 0.55).
-Random Forest: 0.794 / 0.880 / 0.768 / 0.820. Logistic Regression: 0.691 / 0.833 / 0.737 / 0.782.
-Retraining reproduced these numbers exactly.
+## Verification performed (V2)
+- `pytest`: **83 passed** (16 new: re-apply incl. alert sync and validation, every scenario, scenario API/persistence,
+  PDF with exactly 5 pages, CSV template round-trip).
+- TypeScript strict type-check + production build: clean.
+- Playwright (Chromium) walkthrough, all passing: rapid arrow keys through the story, skip/replay, enter;
+  rapid navigation clicks; Quick Scan blocked until a sample, then scans an edited fraud sample; Advanced
+  validation; save & re-apply bands; risk card → filtered Explorer (no source column); XAI auto-selects; Scenario
+  comparison + threshold experiment; PDF download; Model Lab insights; theme persistence.
+- All 10 pages, both themes: zero console errors. Phone width (390 px): no horizontal overflow on any page.
+- Reduced motion: the welcome opens directly on the final screen; the ambient canvas renders one static frame.
 
-## Known limitations / caveats
-- The Windows `.bat` scripts were written for Windows but developed and tested on Linux; the commands
-  they call (venv, pip, npm, uvicorn) were all verified. Run `setup_project.bat` on Windows to confirm.
-- Kaggle records get *replay* timestamps (seed date + `Time` offset).
-- The demo DB is fraud-enriched (all test frauds + 4,000 legit), so dashboard rates exceed 0.17%.
-- Single-user, no authentication (local demo).
-- Recharts bundle is ~450 kB (split into its own cached chunk).
+## Known limitations
+- `.bat` scripts and the app are developed on Linux; commands are cross-platform but Windows runs are user-verified.
+- Scenario Lab shows the models react mainly to V-component patterns; amount or velocity changes barely move scores
+  (documented as a finding, not hidden).
+- Kaggle records use replay timestamps; the demo DB over-represents fraud; probabilities are not calibrated.
+- Single-user, no authentication.
+- The View-Transition circular theme reveal needs a Chromium-based browser; others get a smooth cross-fade.
 
-## Known bugs
-None open. Fixed during development: non-finite ROC threshold broke JSON; artifact path crash with a
-custom artifacts dir; mobile horizontal overflow (grid `min-width`); gauge needle overlapping the label.
+## Bugs fixed during V2
+Re-apply disabled while editing; `AnimatePresence mode="wait"` freezing fast-changing panels (orbit card, risk
+sentence, results); SVG `r`/`cx` attribute animations logging errors on unmount (now transform/scale based);
+nested `<button>` in the Advanced Scan header; ledger overlapping the story scene; Model Lab panels stretching when
+an insight opened.
 
-## Next steps (optional enhancements)
-1. Hyper-parameter search (Optuna) + probability calibration.
-2. Cost-based threshold objective selectable in the UI.
-3. Drift monitoring (PSI) on incoming transactions.
-4. Docker / deployment, authentication.
-5. Frontend unit tests (Vitest + Testing Library).
+## Next steps (optional)
+1. Frontend unit tests (Vitest + Testing Library) for `insights.tsx` and scanner validation.
+2. Cost-based threshold objective selectable in the Risk Center.
+3. Probability calibration; drift monitoring; authentication; Docker.
 
 ## How to resume in a new session
-1. `setup_project.bat` (or follow README §15), then `run_project.bat`.
-2. Backend tests: run `..\.venv\Scripts\python -m pytest` from `backend/`. Frontend type-check: run
-   `npm run typecheck` from `frontend/`.
+1. `.\setup_project.bat` (first time) then `.\run_project.bat` (in PowerShell use the `.\` prefix).
+2. Backend tests: run `..\.venv\Scripts\python -m pytest` from `backend/`. Frontend: run `npm run typecheck` from `frontend/`.
 3. Read `docs/ARCHITECTURE.md` for where things live.

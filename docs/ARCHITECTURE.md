@@ -46,6 +46,7 @@ flowchart TB
 | `eda.py` | EDA statistics (JSON for the UI) and Matplotlib/Seaborn PNGs |
 | `explain.py` | SHAP explainers (Tree/Linear), local & global explanations |
 | `synthetic.py` | Synthetic transaction engine (perturbation of training records + metadata) |
+| `scenarios.py` | Fraud Scenario Lab: five documented perturbation scenarios producing model-compatible vectors |
 | `train.py` | Orchestrates the 9 experiments, selection, test evaluation, saving |
 
 ### `backend/app/` (web API)
@@ -64,6 +65,7 @@ flowchart TB
 | `services/alert_service.py` | Alert queue and analyst decisions |
 | `services/analytics_service.py` | Dashboard and trend aggregations (pandas over SQL results) |
 | `services/seed_service.py` | First-start seeding + model metadata sync |
+| `services/pdf_report.py` | ReportLab + Matplotlib branded PDF (two-pass canvas for "Page X of Y") |
 | `api/*.py` | Thin HTTP routers that call services |
 
 ## 3. Database design (SQLite)
@@ -154,7 +156,10 @@ Design notes:
 |---|---|
 | `src/components/Brand.tsx` | The "Signal Q" symbol and wordmark |
 | `src/components/Layout.tsx` | Index-rail navigation, live ticker, alert watcher + floating notifications, mobile drawer, page transitions |
-| `src/components/LoadingScreen.tsx` | Branded boot sequence (once per session) |
+| `src/pages/Welcome.tsx` | "The Journey of a Transaction": 4 SVG story scenes + welcome screen with an interactive orbit of real transactions; shown once per session |
+| `src/components/Ambient.tsx` | Canvas background: drifting nodes, network links, travelling signals (≤30 fps, paused when hidden, static for reduced motion) |
+| `src/components/ThemeSwitch.tsx` | Animated theme toggle; circular reveal via the View Transitions API with fallback |
+| `src/lib/insights.tsx` | Generates Model Lab chart interpretations from the stored metrics |
 | `src/components/ui.tsx` | Panels, editorial page headers, chips, animated numbers, segmented controls, drawer, dialogs, chart tooltip |
 | `src/components/viz.tsx` | Risk meter gauge, risk-distribution core, SHAP bars, confusion matrix |
 | `src/lib/` | Typed API client, data hook with polling, theme/settings/toast context, chart colour resolver |
