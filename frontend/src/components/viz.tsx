@@ -80,8 +80,8 @@ export function RiskCore({ distribution, rate, total }: { distribution: Record<R
     <svg viewBox="0 0 320 320" className="h-full w-full" role="img" aria-label="Risk distribution rings">
       <defs>
         <radialGradient id="coreGlow">
-          <stop offset="0" stopColor="rgb(var(--violet))" stopOpacity="0.35" />
-          <stop offset="1" stopColor="rgb(var(--violet))" stopOpacity="0" />
+          <stop offset="0" stopColor="rgb(var(--primary))" stopOpacity="0.35" />
+          <stop offset="1" stopColor="rgb(var(--primary))" stopOpacity="0" />
         </radialGradient>
       </defs>
       <circle cx="160" cy="160" r="150" fill="url(#coreGlow)" />
@@ -138,16 +138,16 @@ export function ShapBars({ contributions, max = 12, units }: { contributions: Co
               <div className="absolute left-1/2 top-0 h-full w-px bg-line/25" />
               <motion.div
                 className="absolute top-1 h-3 rounded-sm"
-                style={{ background: pos ? "rgb(var(--coral))" : "rgb(var(--cyan))", [pos ? "left" : "right"]: "50%" }}
+                style={{ background: pos ? "rgb(var(--coral))" : "rgb(var(--secondary))", [pos ? "left" : "right"]: "50%" }}
                 initial={{ width: 0 }} animate={{ width: `${w}%` }} transition={{ duration: 0.7, delay: i * 0.035 }}
               />
             </div>
-            <div className={`num text-[11.5px] ${pos ? "text-coral" : "text-cyan"}`}>{pos ? "+" : ""}{fmtNum(c.shap_value, 3)}</div>
+            <div className={`num text-[11.5px] ${pos ? "text-coral" : "text-secondary"}`}>{pos ? "+" : ""}{fmtNum(c.shap_value, 3)}</div>
           </div>
         );
       })}
       <div className="flex justify-between pt-1 font-mono text-[10px] uppercase tracking-wider text-ink-3">
-        <span className="text-cyan">← towards legitimate</span>
+        <span className="text-secondary">← towards legitimate</span>
         {units && <span>SHAP · {units}</span>}
         <span className="text-coral">towards fraud →</span>
       </div>
@@ -163,7 +163,7 @@ export function ConfusionMatrix({ m, compact = false }: { m: Metrics["confusion_
     { k: "TN", v: m.tn, d: "Legit predicted legit", tone: "mint", good: true },
     { k: "FP", v: m.fp, d: "False alarm", tone: "amber", good: false },
     { k: "FN", v: m.fn, d: "Missed fraud", tone: "coral", good: false },
-    { k: "TP", v: m.tp, d: "Fraud caught", tone: "cyan", good: true },
+    { k: "TP", v: m.tp, d: "Fraud caught", tone: "secondary", good: true },
   ];
   return (
     <div>
@@ -191,7 +191,7 @@ export function ConfusionMatrix({ m, compact = false }: { m: Metrics["confusion_
 }
 
 /* Small inline sparkline (no axes) */
-export function Sparkline({ values, color = "rgb(var(--violet))", height = 36 }: { values: number[]; color?: string; height?: number }) {
+export function Sparkline({ values, color = "rgb(var(--primary))", height = 36 }: { values: number[]; color?: string; height?: number }) {
   if (values.length < 2) return <div style={{ height }} />;
   const max = Math.max(...values, 1);
   const pts = values.map((v, i) => `${(i / (values.length - 1)) * 100},${height - (v / max) * (height - 4) - 2}`).join(" ");

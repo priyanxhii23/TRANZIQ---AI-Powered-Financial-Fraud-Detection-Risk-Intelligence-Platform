@@ -16,8 +16,8 @@ export function BrandMark({ size = 32, animate = false, className = "" }: { size
     <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden>
       <defs>
         <linearGradient id={`g${id}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="rgb(124,92,255)" />
-          <stop offset="1" stopColor="rgb(34,211,238)" />
+          <stop offset="0" style={{ stopColor: "rgb(var(--primary))" }} />
+          <stop offset="1" style={{ stopColor: "rgb(var(--secondary))" }} />
         </linearGradient>
       </defs>
       <motion.path
@@ -38,7 +38,7 @@ export function BrandMark({ size = 32, animate = false, className = "" }: { size
       ].map(([cx, cy, d], i) => (
         <motion.circle
           key={i} cx={cx} cy={cy} r={i === 2 ? 4.2 : 3}
-          fill={i === 2 ? "rgb(34,211,238)" : "rgb(124,92,255)"}
+          style={{ fill: i === 2 ? "rgb(var(--secondary))" : "rgb(var(--primary))" }}
           initial={animate ? { scale: 0 } : false} animate={{ scale: 1 }}
           transition={{ delay: animate ? d : 0, type: "spring", stiffness: 300, damping: 15 }}
         />

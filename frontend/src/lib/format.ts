@@ -40,8 +40,8 @@ export const RISK_META: Record<RiskLevel, { label: string; color: string; tw: st
 };
 
 export const SOURCE_META: Record<Source, { label: string; short: string; color: string }> = {
-  kaggle: { label: "Real · Kaggle", short: "REAL", color: "rgb(var(--cyan))" },
-  synthetic: { label: "Synthetic demo", short: "SYNTH", color: "rgb(var(--violet))" },
+  kaggle: { label: "Real · Kaggle", short: "REAL", color: "rgb(var(--secondary))" },
+  synthetic: { label: "Synthetic demo", short: "SYNTH", color: "rgb(var(--primary))" },
   user: { label: "User submitted", short: "USER", color: "rgb(var(--amber))" },
 };
 

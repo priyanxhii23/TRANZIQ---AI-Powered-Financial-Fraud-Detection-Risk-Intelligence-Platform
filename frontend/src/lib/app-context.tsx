@@ -13,7 +13,7 @@ export interface Toast {
 
 interface Ctx {
   theme: Theme;
-  toggleTheme: () => void;
+  toggleTheme: (origin?: { x: number; y: number }) => void;
   settings: Settings | null;
   refreshSettings: () => Promise<void>;
   setActiveModel: (m: ModelName) => Promise<void>;
@@ -49,6 +49,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       /* storage blocked */
     }
   }, [theme]);
+
+  /** Theme switch: circular reveal from the toggle via the View Transitions API, cross-fade fallback. */
+  const toggleTheme = useCallback((origin?: { x: number; y: number }) => {
+    const next = (t: Theme) => (t === "dark" ? "light" : "dark");
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!doc.startViewTransition || reduce) { setTheme(next); return; }
+    const x = origin?.x ?? window.innerWidth / 2, y = origin?.y ?? 0;
+    const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const vt = doc.startViewTransition(() => {
+      const t = next(document.documentElement.classList.contains("light") ? "light" : "dark");
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(t);
+      setTheme(t);
+    });
+    vt.ready.then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+        { duration: 650, easing: "cubic-bezier(0.22, 1, 0.36, 1)", pseudoElement: "::view-transition-new(root)" },
+      );
+    }).catch(() => null);
+  }, []);
 
   const notify = useCallback((t: Omit<Toast, "id">) => {
     const id = Date.now() + Math.random();
@@ -96,11 +118,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Ctx>(
     () => ({
-      theme, toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+      theme, toggleTheme,
       settings, refreshSettings, setActiveModel, health, healthError, toasts, notify, dismiss,
       dataVersion, bumpData: () => setDataVersion((v) => v + 1),
     }),
-    [theme, settings, refreshSettings, setActiveModel, health, healthError, toasts, notify, dismiss, dataVersion],
+    [theme, toggleTheme, settings, refreshSettings, setActiveModel, health, healthError, toasts, notify, dismiss, dataVersion],
   );
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
@@ -118,12 +140,13 @@ export function useChartColors() {
     const css = getComputedStyle(document.documentElement);
     const c = (n: string, a = 1) => `rgb(${css.getPropertyValue(`--${n}`).trim().split(" ").join(",")}${a < 1 ? `,${a}` : ""})`.replace("rgb(", a < 1 ? "rgba(" : "rgb(");
     return {
-      violet: c("violet"), cyan: c("cyan"), coral: c("coral"), amber: c("amber"), mint: c("mint"),
-      ink: c("ink"), ink2: c("ink-2"), ink3: c("ink-3"), grid: c("line", 0.1), panel: c("panel"), bg: c("bg"),
-      violetSoft: c("violet", 0.25), cyanSoft: c("cyan", 0.22), coralSoft: c("coral", 0.25),
-      models: { logistic_regression: c("amber"), random_forest: c("cyan"), xgboost: c("violet") } as Record<string, string>,
+      primary: c("primary"), secondary: c("secondary"), tertiary: c("tertiary"), coral: c("coral"), amber: c("amber"), mint: c("mint"),
+      ink: c("ink"), ink2: c("ink-2"), ink3: c("ink-3"), grid: c("line", 0.12), panel: c("panel"), bg: c("bg"),
+      primarySoft: c("primary", 0.25), secondarySoft: c("secondary", 0.22), coralSoft: c("coral", 0.25),
+      models: { logistic_regression: c("tertiary"), random_forest: c("secondary"), xgboost: c("primary") } as Record<string, string>,
       risk: { low: c("mint"), medium: c("amber"), high: c("coral", 0.7), critical: c("coral") } as Record<string, string>,
-      source: { kaggle: c("cyan"), synthetic: c("violet"), user: c("amber") } as Record<string, string>,
+      source: { kaggle: c("secondary"), synthetic: c("primary"), user: c("amber") } as Record<string, string>,
+      raw: (n: string) => css.getPropertyValue(`--${n}`).trim().split(" ").map(Number) as [number, number, number],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);

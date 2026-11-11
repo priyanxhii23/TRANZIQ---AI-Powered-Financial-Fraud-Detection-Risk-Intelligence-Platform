@@ -4,41 +4,61 @@
 
 /* ------------------------------------------------------------------
    TRANZIQ colour system. Values are "R G B" triplets so Tailwind can
-   apply opacity (e.g. bg-violet/20). Dark = midnight navy + graphite,
+   apply opacity (e.g. bg-primary/20). Dark = midnight navy + graphite,
    Light = warm off-white paper.
+   ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------
+   TRANZIQ colour system - two separately art-directed themes.
+   Values are "R G B" triplets so Tailwind can apply opacity (bg-primary/20).
+
+   DARK  · Flashlight / Aubergine / Sandy Brown / Space Cadet
+   LIGHT · Italian Roast / Dried Plum / Parchment
+   Semantic tokens: primary (brand accent), secondary (warm accent),
+   tertiary (third chart series), coral (fraud / critical), amber (medium
+   risk), mint (low risk). Components must use tokens, never raw hex.
    ------------------------------------------------------------------ */
 :root,
 .dark {
-  --bg: 7 10 20;          /* deep midnight navy */
-  --bg-2: 12 16 32;
-  --panel: 16 21 40;      /* graphite-navy panel */
-  --ink: 232 234 243;
-  --ink-2: 163 169 194;
-  --ink-3: 104 112 143;
-  --line: 148 163 209;    /* used at low alpha for hairlines */
-  --violet: 124 92 255;   /* electric violet */
-  --cyan: 34 211 238;
-  --coral: 255 92 108;    /* fraud / critical */
-  --amber: 245 184 75;    /* medium risk */
-  --mint: 52 211 153;     /* low risk */
-  --grid-alpha: 0.05;
+  --bg: 16 17 28;          /* #10111C background */
+  --bg-2: 23 24 36;        /* #171824 soft graphite */
+  --panel: 30 24 44;       /* aubergine-graphite panel */
+  --aubergine: 43 25 61;   /* #2B193D */
+  --space: 31 41 71;       /* #1F2947 space cadet */
+  --ink: 239 231 245;
+  --ink-2: 168 140 191;    /* #A88CBF muted lavender */
+  --ink-3: 138 125 158;
+  --line: 168 140 191;     /* used at low alpha for hairlines */
+  --primary: 183 108 222;  /* #B76CDE flashlight purple */
+  --secondary: 212 163 115;/* #D4A373 sandy brown */
+  --tertiary: 142 162 224; /* steel blue from space cadet */
+  --coral: 240 112 122;    /* controlled fraud red */
+  --amber: 227 194 106;    /* medium risk */
+  --mint: 127 207 159;     /* low risk */
+  --on-primary: 255 255 255;
+  --grid-alpha: 0.045;
+  --shadow: 0 0 0;
   color-scheme: dark;
 }
 
 .light {
-  --bg: 246 243 238;      /* warm off-white */
-  --bg-2: 239 235 228;
-  --panel: 255 253 250;
-  --ink: 18 20 43;
-  --ink-2: 74 79 107;
-  --ink-3: 125 129 150;
-  --line: 28 32 64;
-  --violet: 91 61 245;
-  --cyan: 8 145 178;
-  --coral: 220 52 70;
-  --amber: 196 128 14;
-  --mint: 5 150 105;
-  --grid-alpha: 0.06;
+  --bg: 243 235 221;       /* #F3EBDD parchment cream */
+  --bg-2: 236 226 210;
+  --panel: 250 246 237;    /* #FAF6ED warm ivory */
+  --aubergine: 109 64 93;
+  --space: 222 210 194;    /* #DED2C2 border tone */
+  --ink: 52 35 31;         /* #34231F italian roast */
+  --ink-2: 118 96 84;      /* #766054 soft cocoa */
+  --ink-3: 125 102 86;
+  --line: 120 92 76;       /* hairlines from warm taupe/cocoa */
+  --primary: 109 64 93;    /* #6D405D dried plum */
+  --secondary: 138 95 117; /* deepened #A77F92 muted mauve (AA contrast) */
+  --tertiary: 154 106 58;  /* soft bronze / cocoa */
+  --coral: 181 68 60;
+  --amber: 156 108 26;
+  --mint: 74 118 86;       /* muted sage */
+  --on-primary: 250 246 237;
+  --grid-alpha: 0.05;
+  --shadow: 52 35 31;
   color-scheme: light;
 }
 
@@ -46,8 +66,9 @@
   html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
   body {
     @apply bg-bg text-ink font-sans;
-    transition: background-color 0.45s ease, color 0.45s ease;
+    transition: background-color 0.5s ease, color 0.5s ease;
   }
+  .panel, .input, .btn-ghost, aside, header, footer { transition: background-color 0.5s ease, border-color 0.5s ease, color 0.3s ease; }
   /* Subtle engineering-grid backdrop */
   body::before {
     content: "";
@@ -58,18 +79,20 @@
     background-size: 56px 56px;
     mask-image: radial-gradient(ellipse at 60% 0%, black 0%, transparent 75%);
   }
-  ::selection { background: rgb(var(--violet) / 0.35); }
+  ::selection { background: rgb(var(--primary) / 0.3); }
+  /* View-transition based theme switch (supported browsers) */
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
   input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
-  :focus-visible { outline: 2px solid rgb(var(--cyan)); outline-offset: 2px; border-radius: 4px; }
+  :focus-visible { outline: 2px solid rgb(var(--secondary)); outline-offset: 2px; border-radius: 4px; }
 }
 
 @layer components {
   /* Layered glass panel with a hairline border */
   .panel {
     @apply relative min-w-0 rounded-md border border-line/[0.12] bg-panel/70 backdrop-blur-md;
-    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 24px 48px -32px rgb(0 0 0 / 0.5);
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 24px 48px -32px rgb(var(--shadow) / 0.55);
   }
-  .light .panel { box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.9) inset, 0 18px 40px -30px rgb(18 20 43 / 0.25); }
+  .light .panel { box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.8) inset, 0 18px 40px -30px rgb(var(--shadow) / 0.28); }
   .panel-head { @apply flex flex-wrap items-center justify-between gap-3 border-b border-line/[0.10] px-5 py-3; }
   .kicker { @apply font-mono text-[10.5px] uppercase tracking-kicker text-ink-3; }
   .label { @apply font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-3; }
@@ -81,9 +104,10 @@
       transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
   }
   .btn-primary {
-    @apply btn text-white;
-    background: linear-gradient(120deg, rgb(var(--violet)), rgb(var(--violet) / 0.85) 55%, rgb(var(--cyan) / 0.9));
-    box-shadow: 0 8px 24px -10px rgb(var(--violet) / 0.8);
+    @apply btn;
+    color: rgb(var(--on-primary));
+    background: linear-gradient(120deg, rgb(var(--primary)), rgb(var(--primary) / 0.88) 60%, rgb(var(--secondary)));
+    box-shadow: 0 8px 24px -12px rgb(var(--primary) / 0.75);
   }
   .btn-primary:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
   .btn-ghost { @apply btn border border-line/[0.16] text-ink-2 hover:border-line/30 hover:text-ink hover:bg-line/[0.05]; }
@@ -91,7 +115,7 @@
 
   .input {
     @apply w-full rounded border border-line/[0.16] bg-bg/60 px-3 py-2 text-[13px] text-ink
-      placeholder:text-ink-3 transition-colors focus:border-violet/70 focus:outline-none;
+      placeholder:text-ink-3 transition-colors focus:border-primary/70 focus:outline-none;
   }
   .select { @apply input appearance-none pr-8; background-image: none; }
 
@@ -102,7 +126,7 @@
   .table-row td { @apply whitespace-nowrap px-3 py-2.5 text-[13px]; }
 
   .grad-text {
-    background: linear-gradient(100deg, rgb(var(--violet)), rgb(var(--cyan)));
+    background: linear-gradient(100deg, rgb(var(--primary)), rgb(var(--secondary)));
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 }
@@ -110,10 +134,11 @@
 /* Range slider */
 input[type="range"].range { @apply h-1 w-full cursor-pointer appearance-none rounded-full bg-line/20; }
 input[type="range"].range::-webkit-slider-thumb {
-  @apply h-4 w-4 appearance-none rounded-full border-2 border-white bg-violet shadow;
-  box-shadow: 0 0 0 4px rgb(var(--violet) / 0.25);
+  @apply h-4 w-4 appearance-none rounded-full border-2 bg-primary shadow;
+  border-color: rgb(var(--panel));
+  box-shadow: 0 0 0 4px rgb(var(--primary) / 0.25);
 }
-input[type="range"].range::-moz-range-thumb { @apply h-4 w-4 rounded-full border-2 border-white bg-violet; }
+input[type="range"].range::-moz-range-thumb { @apply h-4 w-4 rounded-full border-2 bg-primary; border-color: rgb(var(--panel)); }
 
 /* Thin scrollbars */
 * { scrollbar-width: thin; scrollbar-color: rgb(var(--line) / 0.25) transparent; }
@@ -129,3 +154,11 @@ input[type="range"].range::-moz-range-thumb { @apply h-4 w-4 rounded-full border
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+/* Ambient drifting light behind the app */
+@keyframes drift { 0% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(4%, 6%, 0) scale(1.08); } 100% { transform: translate3d(0,0,0) scale(1); } }
+.ambient-orb { position: absolute; border-radius: 9999px; filter: blur(90px); animation: drift 28s ease-in-out infinite; }
+
+@keyframes orbitSpin { to { transform: rotate(360deg); } }
+.orbit-spin { animation: orbitSpin 140s linear infinite; }
+.orbit-spin:hover, .orbit-spin:focus-within { animation-play-state: paused; }
